@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#020617">
   <title>Control de entradas</title>
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
     :root {
@@ -233,36 +233,20 @@
       line-height: 1.4;
     }
 
-    /* Cámara cuadrada y más compacta */
     .scanner-wrap {
-      position: relative;
-      z-index: 1;
-      width: min(100%, 390px);
-      aspect-ratio: 1 / 1;
       overflow: hidden;
       border-radius: 22px;
       border: 1px solid var(--border);
       background: #000;
       margin: 14px auto 0;
+      width: min(100%, 390px);
+      aspect-ratio: 1 / 1;
     }
 
     #reader {
-      position: absolute;
-      inset: 0;
-      z-index: 1;
-      width: 100% !important;
-      height: 100% !important;
-      min-height: 0 !important;
+      width: 100%;
+      min-height: 410px;
       background: #000;
-      overflow: hidden;
-    }
-
-    #reader > div,
-    #reader video {
-      width: 100% !important;
-      height: 100% !important;
-      max-width: none !important;
-      max-height: none !important;
     }
 
     #reader video {
@@ -271,18 +255,17 @@
       pointer-events: none !important;
     }
 
-    /* Oculta elementos de estado que añade la librería bajo el vídeo */
-    #reader__dashboard_section,
-    #reader__dashboard_section_csr,
-    #reader__header_message,
-    #reader__status_span {
-      display: none !important;
+    /* Cámara visualmente cuadrada sin alterar el lienzo interno del lector.
+       Así se conserva la compatibilidad con iPhone y Android. */
+    .scanner-wrap #reader {
+      width: 100%;
     }
 
-    @media (max-width: 430px) {
-      .scanner-wrap {
-        width: min(100%, 350px);
-      }
+
+    .scanner-wrap,
+    #reader {
+      position: relative;
+      z-index: 1;
     }
 
     .result {
@@ -679,7 +662,7 @@
           </div>
 
           <div class="grid2 mt">
-            <button type="button" class="btn secondary small" onclick="switchCamera()">Cambiar cámara</button>
+            <button type="button" class="btn secondary small" onclick="restartScanner()">Reiniciar cámara</button>
             <button type="button" class="btn secondary small" onclick="syncNow(true)">Forzar sincronización</button>
           </div>
         </div>
@@ -846,14 +829,14 @@
     let html5QrCode = null
     let scannerStarted = false
     let scannerPaused = false
-    let availableCameras = []
-    let selectedCameraIndex = 0
     let isProcessing = false
     let lastCode = ''
     let lastCodeTime = 0
     let currentResultCode = ''
     let undoTargetCode = ''
     let audioCtx = null
+    let scannerTransition = Promise.resolve()
+    let scannerDesiredRunning = false
 
     window.addEventListener('load', () => {
       bindBottomNavigation()
@@ -864,23 +847,11 @@
 
     function bindBottomNavigation() {
       document.querySelectorAll('.nav-btn[data-tab]').forEach(button => {
-        let handledAt = 0
-
-        const openTab = event => {
+        button.addEventListener('click', event => {
           event.preventDefault()
           event.stopPropagation()
-
-          const now = Date.now()
-          if (now - handledAt < 350) return
-          handledAt = now
-
-          const tab = button.dataset.tab
-          changeTab(tab)
-        }
-
-        button.addEventListener('click', openTab, { passive: false })
-        button.addEventListener('touchend', openTab, { passive: false })
-        button.addEventListener('pointerup', openTab, { passive: false })
+          changeTab(button.dataset.tab)
+        })
       })
     }
 
@@ -1037,11 +1008,9 @@
       window.scrollTo({ top: 0, behavior: 'instant' })
 
       if (tab === 'scanner') {
-        await ensureScannerRunning()
+        await setScannerRunning(true)
       } else {
-        // No bloqueamos la apertura de la pestaña esperando a Safari.
-        // La cámara se detiene en segundo plano.
-        stopScanner().catch(error => console.warn('No se pudo detener la cámara:', error))
+        await setScannerRunning(false)
       }
 
       if (tab === 'search') renderSearchResults()
@@ -1052,108 +1021,96 @@
       return value.charAt(0).toUpperCase() + value.slice(1)
     }
 
-    async function ensureScannerRunning() {
-      if (!scannerStarted) {
-        await startScanner()
-      }
-    }
+    function setScannerRunning(shouldRun) {
+      scannerDesiredRunning = shouldRun
 
-    async function startScanner() {
-      try {
-        if (!html5QrCode) {
-          html5QrCode = new Html5Qrcode('reader', {
-            formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
-            experimentalFeatures: {
-              useBarCodeDetectorIfSupported: true
-            },
-            verbose: false
-          })
-        }
+      scannerTransition = scannerTransition
+        .catch(() => {})
+        .then(async () => {
+          if (shouldRun !== scannerDesiredRunning) return
 
-        if (!availableCameras.length) {
-          try {
-            availableCameras = await Html5Qrcode.getCameras()
-
-            const rearCameras = availableCameras.filter(camera => {
-              const label = String(camera.label || '').toLowerCase()
-              return /back|rear|environment|trasera/.test(label) &&
-                !/ultra|telephoto|teleobjetivo/.test(label)
-            })
-
-            if (rearCameras.length) {
-              const preferredId = rearCameras[rearCameras.length - 1].id
-              const index = availableCameras.findIndex(camera => camera.id === preferredId)
-              if (index >= 0) selectedCameraIndex = index
-            } else if (availableCameras.length > 1) {
-              selectedCameraIndex = availableCameras.length - 1
-            }
-          } catch (cameraError) {
-            availableCameras = []
+          if (shouldRun) {
+            await startScannerInternal()
+          } else {
+            await stopScannerInternal()
           }
-        }
+        })
 
-        const cameraSource = availableCameras.length
-          ? availableCameras[selectedCameraIndex].id
-          : { facingMode: { exact: 'environment' } }
-
-        await html5QrCode.start(
-          cameraSource,
-          {
-            fps: 10,
-            aspectRatio: 1,
-            disableFlip: false,
-            qrbox: (w, h) => {
-              const size = Math.floor(Math.min(w, h) * .90)
-              return { width: size, height: size }
-            }
-          },
-          onScanSuccess,
-          () => {}
-        )
-
-        scannerStarted = true
-        scannerPaused = false
-      } catch (error) {
-        alert('No se ha podido abrir la cámara: ' + (error.message || error))
-      }
+      return scannerTransition
     }
 
-    async function stopScanner() {
+    async function ensureScannerRunning() {
+      await setScannerRunning(true)
+    }
+
+    async function startScannerInternal() {
+      if (scannerStarted) return
+
+      if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode('reader', {
+          formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+          verbose: false
+        })
+      }
+
+      await html5QrCode.start(
+        { facingMode: 'environment' },
+        {
+          fps: 18,
+          disableFlip: true,
+          qrbox: (w, h) => {
+            const size = Math.floor(Math.min(w, h) * .91)
+            return { width: size, height: size }
+          },
+          videoConstraints: {
+            facingMode: 'environment',
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
+        },
+        onScanSuccess,
+        () => {}
+      )
+
+      scannerStarted = true
+      scannerPaused = false
+    }
+
+    async function stopScannerInternal() {
       if (!html5QrCode || !scannerStarted) {
         scannerStarted = false
         scannerPaused = false
         return
       }
 
-      try {
-        await html5QrCode.stop()
-      } catch (e) {}
-
+      await html5QrCode.stop()
       scannerStarted = false
       scannerPaused = false
     }
 
-    async function restartScanner() {
-      await stopScanner()
-      await startScanner()
+    async function startScanner() {
+      try {
+        await setScannerRunning(true)
+      } catch (error) {
+        alert('No se ha podido abrir la cámara: ' + (error.message || error))
+      }
     }
 
-    async function switchCamera() {
-      if (!availableCameras.length) {
-        try {
-          availableCameras = await Html5Qrcode.getCameras()
-        } catch (error) {
-          availableCameras = []
-        }
+    async function stopScanner() {
+      try {
+        await setScannerRunning(false)
+      } catch (error) {
+        console.warn('No se pudo detener la cámara:', error)
       }
+    }
 
-      if (availableCameras.length < 2) {
-        await restartScanner()
-        return
+    async function restartScanner() {
+      try {
+        await setScannerRunning(false)
+        await setScannerRunning(true)
+      } catch (error) {
+        alert('No se ha podido reiniciar la cámara: ' + (error.message || error))
       }
-
-      selectedCameraIndex = (selectedCameraIndex + 1) % availableCameras.length
-      await restartScanner()
     }
 
     function onScanSuccess(decodedText) {
