@@ -519,7 +519,8 @@
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 6px;
-      z-index: 50;
+      z-index: 9999;
+      pointer-events: auto;
     }
 
     .nav-btn {
@@ -531,6 +532,9 @@
       min-height: 53px;
       font-size: 11px;
       font-weight: 800;
+      position: relative;
+      z-index: 10000;
+      touch-action: manipulation;
     }
 
     .nav-btn .nav-icon {
@@ -595,7 +599,7 @@
       </div>
 
       <div class="mt">
-        <button id="loginButton" class="btn" onclick="login()">Entrar</button>
+        <button type="button" id="loginButton" class="btn" onclick="login()">Entrar</button>
       </div>
 
       <div class="small-text mt">La lista se guarda localmente en este dispositivo para que el escaneo sea instantáneo.</div>
@@ -642,8 +646,8 @@
           </div>
 
           <div class="grid2 mt">
-            <button class="btn secondary small" onclick="restartScanner()">Reiniciar cámara</button>
-            <button class="btn secondary small" onclick="syncNow(true)">Forzar sincronización</button>
+            <button type="button" class="btn secondary small" onclick="restartScanner()">Reiniciar cámara</button>
+            <button type="button" class="btn secondary small" onclick="syncNow(true)">Forzar sincronización</button>
           </div>
         </div>
       </section>
@@ -664,7 +668,7 @@
               <div class="title">Resumen</div>
               <div class="subtitle">Estado general del acceso.</div>
             </div>
-            <button class="btn secondary small inline" onclick="loadDashboard()">Actualizar</button>
+            <button type="button" class="btn secondary small inline" onclick="loadDashboard()">Actualizar</button>
           </div>
 
           <div class="stats mt">
@@ -726,16 +730,16 @@
           </div>
 
           <div class="grid2 mt">
-            <button class="btn secondary small" onclick="syncNow(true)">Actualizar lista completa</button>
-            <button class="btn secondary small" onclick="runPreflight()">Comprobar sistema</button>
+            <button type="button" class="btn secondary small" onclick="syncNow(true)">Actualizar lista completa</button>
+            <button type="button" class="btn secondary small" onclick="runPreflight()">Comprobar sistema</button>
           </div>
 
           <div class="grid2 mt">
-            <button class="btn secondary small" onclick="createBackupFromApp()">Crear copia de seguridad</button>
-            <button class="btn secondary small" onclick="showUndoModal(lastAcceptedCode)">Deshacer último acceso</button>
+            <button type="button" class="btn secondary small" onclick="createBackupFromApp()">Crear copia de seguridad</button>
+            <button type="button" class="btn secondary small" onclick="showUndoModal(lastAcceptedCode)">Deshacer último acceso</button>
           </div>
 
-          <button class="btn danger mt" onclick="logout()">Cerrar sesión</button>
+          <button type="button" class="btn danger mt" onclick="logout()">Cerrar sesión</button>
         </div>
 
         <div id="preflightCard" class="card hidden">
@@ -748,17 +752,17 @@
     <section id="resultView" class="hidden">
       <div id="resultBox" class="result ok"></div>
       <div class="grid2 mt">
-        <button class="btn secondary" onclick="showUndoModal(currentResultCode)">Deshacer</button>
-        <button class="btn" onclick="nextScan()">Siguiente</button>
+        <button type="button" class="btn secondary" onclick="showUndoModal(currentResultCode)">Deshacer</button>
+        <button type="button" class="btn" onclick="nextScan()">Siguiente</button>
       </div>
     </section>
   </div>
 
   <nav id="bottomNav" class="bottom-nav hidden">
-    <button id="navScanner" class="nav-btn active" onclick="showTab('scanner')"><span class="nav-icon">▣</span>Escanear</button>
-    <button id="navSearch" class="nav-btn" onclick="showTab('search')"><span class="nav-icon">⌕</span>Buscar</button>
-    <button id="navDashboard" class="nav-btn" onclick="showTab('dashboard')"><span class="nav-icon">▤</span>Resumen</button>
-    <button id="navSettings" class="nav-btn" onclick="showTab('settings')"><span class="nav-icon">⚙</span>Ajustes</button>
+    <button type="button" id="navScanner" class="nav-btn active" onclick="showTab('scanner')"><span class="nav-icon">▣</span>Escanear</button>
+    <button type="button" id="navSearch" class="nav-btn" onclick="showTab('search')"><span class="nav-icon">⌕</span>Buscar</button>
+    <button type="button" id="navDashboard" class="nav-btn" onclick="showTab('dashboard')"><span class="nav-icon">▤</span>Resumen</button>
+    <button type="button" id="navSettings" class="nav-btn" onclick="showTab('settings')"><span class="nav-icon">⚙</span>Ajustes</button>
   </nav>
 
   <div id="undoModal" class="modal hidden">
@@ -768,8 +772,8 @@
       <input id="undoPin" class="mt" type="password" inputmode="numeric" placeholder="Clave de confirmación">
       <textarea id="undoReason" class="mt" placeholder="Motivo, por ejemplo: escaneo accidental"></textarea>
       <div class="grid2 mt">
-        <button class="btn secondary" onclick="closeUndoModal()">Cancelar</button>
-        <button id="undoConfirmButton" class="btn danger" onclick="confirmUndo()">Deshacer</button>
+        <button type="button" class="btn secondary" onclick="closeUndoModal()">Cancelar</button>
+        <button type="button" id="undoConfirmButton" class="btn danger" onclick="confirmUndo()">Deshacer</button>
       </div>
     </div>
   </div>
@@ -947,7 +951,7 @@
       localStorage.removeItem(KEYS.tokenExpiry)
     }
 
-    function showTab(tab) {
+    async function showTab(tab) {
       document.getElementById('resultView').classList.add('hidden')
       document.getElementById('mainApp').classList.remove('hidden')
       document.getElementById('bottomNav').classList.remove('hidden')
@@ -958,9 +962,9 @@
       })
 
       if (tab === 'scanner') {
-        startOrResumeScanner()
+        await ensureScannerRunning()
       } else {
-        pauseScanner()
+        await stopScanner()
       }
 
       if (tab === 'search') renderSearchResults()
@@ -971,9 +975,10 @@
       return value.charAt(0).toUpperCase() + value.slice(1)
     }
 
-    async function startOrResumeScanner() {
-      if (!scannerStarted) await startScanner()
-      else resumeScanner()
+    async function ensureScannerRunning() {
+      if (!scannerStarted) {
+        await startScanner()
+      }
     }
 
     async function startScanner() {
@@ -1012,32 +1017,23 @@
       }
     }
 
-    function pauseScanner() {
-      try {
-        if (html5QrCode && scannerStarted && !scannerPaused) {
-          html5QrCode.pause(true)
-          scannerPaused = true
-        }
-      } catch (e) {}
-    }
-
-    function resumeScanner() {
-      try {
-        if (html5QrCode && scannerStarted && scannerPaused) {
-          html5QrCode.resume()
-          scannerPaused = false
-        }
-      } catch (e) {
-        restartScanner()
+    async function stopScanner() {
+      if (!html5QrCode || !scannerStarted) {
+        scannerStarted = false
+        scannerPaused = false
+        return
       }
+
+      try {
+        await html5QrCode.stop()
+      } catch (e) {}
+
+      scannerStarted = false
+      scannerPaused = false
     }
 
     async function restartScanner() {
-      if (html5QrCode) {
-        try { await html5QrCode.stop() } catch (e) {}
-      }
-      scannerStarted = false
-      scannerPaused = false
+      await stopScanner()
       await startScanner()
     }
 
@@ -1051,9 +1047,10 @@
       lastCode = code
       lastCodeTime = now
       isProcessing = true
-      pauseScanner()
+
+      // La cámara permanece activa detrás de la pantalla de resultado.
+      // Los nuevos callbacks se ignoran hasta pulsar “Siguiente”.
       processLocalCheckIn(code, 'SCAN')
-      isProcessing = false
     }
 
     function processLocalCheckIn(code, source) {
@@ -1144,13 +1141,15 @@
       return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 9)
     }
 
-    function nextScan() {
+    async function nextScan() {
       currentResultCode = ''
+      isProcessing = false
+
       document.getElementById('resultView').classList.add('hidden')
       document.getElementById('mainApp').classList.remove('hidden')
       document.getElementById('bottomNav').classList.remove('hidden')
-      showTab('scanner')
-      setTimeout(() => resumeScanner(), 550)
+
+      await showTab('scanner')
     }
 
     function showResult(res) {
@@ -1492,8 +1491,8 @@
           <div class="search-name">${escapeHtml(ticket.estudiante || 'Sin estudiante')}</div>
           <div class="search-meta">${escapeHtml(ticket.zona)} · Fila ${escapeHtml(ticket.fila)} · Butaca ${escapeHtml(ticket.butaca)}<br>${escapeHtml(ticket.code)}<br>${ticket.used ? '⚠️ Utilizada' : '✅ Disponible'}</div>
           <div class="search-actions">
-            <button class="btn small ${ticket.used ? 'secondary' : ''}" onclick="manualCheckIn('${escapeJs(ticket.code)}')">${ticket.used ? 'Ver estado' : 'Registrar acceso'}</button>
-            <button class="btn secondary small" onclick="showUndoModal('${escapeJs(ticket.code)}')">Deshacer</button>
+            <button type="button" class="btn small ${ticket.used ? 'secondary' : ''}" onclick="manualCheckIn('${escapeJs(ticket.code)}')">${ticket.used ? 'Ver estado' : 'Registrar acceso'}</button>
+            <button type="button" class="btn secondary small" onclick="showUndoModal('${escapeJs(ticket.code)}')">Deshacer</button>
           </div>
         </div>`).join('')
     }
