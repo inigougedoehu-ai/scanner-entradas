@@ -1,23 +1,27 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Escáner de entradas</title>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#020617">
+  <title>Control de entradas</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
     :root {
       --bg: #020617;
       --card: #0f172a;
+      --card2: #111c31;
       --text: #f8fafc;
-      --muted: #cbd5e1;
+      --muted: #aebbd0;
       --border: rgba(255,255,255,.12);
       --blue: #2563eb;
+      --blue2: #60a5fa;
       --ok: #16a34a;
       --warn: #d97706;
       --bad: #dc2626;
+      --palco: #7c2d3e;
+      --salon: #163c67;
     }
 
     * {
@@ -25,123 +29,248 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    body {
+    html, body {
       margin: 0;
-      min-height: 100vh;
+      min-height: 100%;
       background:
-        radial-gradient(circle at top left, rgba(37,99,235,.35), transparent 35%),
-        radial-gradient(circle at bottom right, rgba(22,163,74,.18), transparent 30%),
+        radial-gradient(circle at top left, rgba(37,99,235,.28), transparent 34%),
+        radial-gradient(circle at bottom right, rgba(22,163,74,.12), transparent 32%),
         var(--bg);
       color: var(--text);
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
-    .app {
-      max-width: 560px;
-      margin: 0 auto;
-      padding: 14px;
-      padding-bottom: 28px;
+    body {
+      padding-bottom: calc(86px + env(safe-area-inset-bottom));
     }
 
-    .card {
-      background: rgba(15,23,42,.96);
-      border: 1px solid var(--border);
-      border-radius: 24px;
-      padding: 18px;
-      box-shadow: 0 22px 60px rgba(0,0,0,.35);
-      margin-bottom: 14px;
-    }
-
-    .title {
-      font-size: 30px;
-      line-height: 1.05;
-      font-weight: 950;
-      letter-spacing: -.04em;
-    }
-
-    .subtitle {
-      color: var(--muted);
-      font-size: 16px;
-      margin-top: 6px;
-    }
-
-    input {
-      width: 100%;
-      min-height: 56px;
-      border-radius: 16px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,.09);
-      color: white;
-      font-size: 22px;
-      padding: 14px;
-      outline: none;
+    button, input, select, textarea {
+      font: inherit;
     }
 
     button {
-      width: 100%;
-      min-height: 58px;
-      border: 0;
-      border-radius: 17px;
-      background: var(--blue);
-      color: white;
-      font-size: 19px;
-      font-weight: 850;
-      padding: 14px;
       cursor: pointer;
     }
 
-    button.secondary {
-      background: rgba(255,255,255,.12);
-      border: 1px solid var(--border);
-    }
-
-    button.next-btn {
-      background: var(--blue);
-      font-size: 23px;
-      min-height: 68px;
-    }
-
-    .mt {
-      margin-top: 14px;
+    .app {
+      max-width: 620px;
+      margin: 0 auto;
+      padding: 14px;
     }
 
     .hidden {
       display: none !important;
     }
 
+    .card {
+      background: rgba(15,23,42,.97);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 18px;
+      box-shadow: 0 22px 60px rgba(0,0,0,.30);
+      margin-bottom: 14px;
+    }
+
+    .title {
+      font-size: 29px;
+      line-height: 1.05;
+      font-weight: 950;
+      letter-spacing: -.035em;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 15px;
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+
+    .mt { margin-top: 14px; }
+    .mb { margin-bottom: 14px; }
+
+    .input,
+    input,
+    select,
+    textarea {
+      width: 100%;
+      min-height: 54px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.08);
+      color: white;
+      padding: 13px 14px;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: #8795aa;
+    }
+
+    .btn {
+      width: 100%;
+      min-height: 56px;
+      border: 0;
+      border-radius: 17px;
+      background: var(--blue);
+      color: white;
+      font-size: 18px;
+      font-weight: 850;
+      padding: 13px 16px;
+    }
+
+    .btn:disabled {
+      opacity: .5;
+      cursor: default;
+    }
+
+    .btn.secondary {
+      background: rgba(255,255,255,.10);
+      border: 1px solid var(--border);
+    }
+
+    .btn.danger {
+      background: var(--bad);
+    }
+
+    .btn.small {
+      min-height: 43px;
+      font-size: 15px;
+      border-radius: 14px;
+    }
+
+    .btn.inline {
+      width: auto;
+      padding-left: 18px;
+      padding-right: 18px;
+    }
+
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .stat {
+      background: rgba(255,255,255,.075);
+      border: 1px solid var(--border);
+      border-radius: 17px;
+      padding: 11px 6px;
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 27px;
+      font-weight: 950;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .sync-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .sync-badge,
+    .mode-badge,
+    .zone-badge,
+    .confirm-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border-radius: 999px;
+      padding: 7px 11px;
+      font-size: 13px;
+      font-weight: 850;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.08);
+    }
+
+    .sync-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #94a3b8;
+    }
+
+    .sync-badge.online .sync-dot { background: #22c55e; }
+    .sync-badge.syncing .sync-dot { background: #f59e0b; }
+    .sync-badge.offline .sync-dot { background: #ef4444; }
+
+    .mode-badge.simulation {
+      background: rgba(217,119,6,.18);
+      border-color: rgba(245,158,11,.55);
+      color: #fde68a;
+    }
+
+    .notice {
+      margin-top: 12px;
+      padding: 11px 13px;
+      border-radius: 15px;
+      background: rgba(245,158,11,.14);
+      border: 1px solid rgba(245,158,11,.45);
+      color: #fde68a;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
     .scanner-wrap {
       overflow: hidden;
       border-radius: 22px;
       border: 1px solid var(--border);
-      background: black;
+      background: #000;
+      margin-top: 14px;
     }
 
     #reader {
       width: 100%;
-      min-height: 430px;
-      background: black;
+      min-height: 410px;
+      background: #000;
     }
 
     #reader video {
-      border-radius: 22px;
       object-fit: cover !important;
+      border-radius: 22px;
     }
 
     .result {
-      text-align: center;
-      border-radius: 24px;
-      padding: 22px;
+      min-height: 69vh;
+      border-radius: 26px;
       border: 1px solid var(--border);
-      white-space: pre-line;
-      min-height: 70vh;
+      padding: 22px;
       display: flex;
       flex-direction: column;
       justify-content: center;
+      text-align: center;
     }
 
     .result.ok {
-      background: rgba(22,163,74,.22);
+      background: rgba(22,163,74,.23);
       border-color: rgba(34,197,94,.65);
+    }
+
+    .result.simulation {
+      background: rgba(37,99,235,.23);
+      border-color: rgba(96,165,250,.65);
     }
 
     .result.duplicate {
@@ -155,12 +284,7 @@
       border-color: rgba(248,113,113,.65);
     }
 
-    .result.checking {
-      background: rgba(37,99,235,.18);
-      border-color: rgba(96,165,250,.55);
-    }
-
-    .icon {
+    .result-icon {
       font-size: 68px;
       line-height: 1;
       margin-bottom: 10px;
@@ -172,13 +296,29 @@
       letter-spacing: -.04em;
     }
 
-    .name {
+    .result-name {
       font-size: 23px;
       font-weight: 850;
       margin-top: 10px;
     }
 
-    .seat {
+    .zone-badge {
+      font-size: 20px;
+      margin-top: 12px;
+      padding: 8px 15px;
+    }
+
+    .zone-badge.palco {
+      background: var(--palco);
+      border-color: rgba(255,255,255,.25);
+    }
+
+    .zone-badge.salon {
+      background: var(--salon);
+      border-color: rgba(255,255,255,.25);
+    }
+
+    .seat-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
@@ -194,471 +334,646 @@
 
     .seat-label {
       color: var(--muted);
-      font-size: 15px;
-      font-weight: 800;
-    }
-
-    .seat-value {
-      font-size: 46px;
-      font-weight: 950;
-      line-height: 1.05;
-      margin-top: 3px;
-      text-transform: uppercase;
-    }
-
-    .time-box {
-      margin-top: 18px;
-      background: rgba(255,255,255,.12);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 14px;
-    }
-
-    .time-label {
-      color: var(--muted);
       font-size: 14px;
       font-weight: 800;
     }
 
-    .time-value {
-      font-size: 26px;
+    .seat-value {
+      font-size: 43px;
       font-weight: 950;
+      line-height: 1;
+      margin-top: 5px;
+    }
+
+    .time-box {
+      margin-top: 16px;
+      background: rgba(255,255,255,.10);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 13px;
+    }
+
+    .time-label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .time-value {
+      font-size: 21px;
+      font-weight: 900;
       margin-top: 4px;
     }
 
     .meta {
       color: var(--muted);
-      font-size: 14px;
+      font-size: 13px;
       line-height: 1.45;
-      margin-top: 12px;
+      margin-top: 11px;
       word-break: break-word;
     }
 
-    .stats {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px;
+    .confirm-badge {
+      margin-top: 13px;
+      justify-content: center;
     }
 
-    .stat {
-      background: rgba(255,255,255,.09);
-      border: 1px solid var(--border);
+    .confirm-badge.pending {
+      color: #fde68a;
+      background: rgba(217,119,6,.18);
+    }
+
+    .confirm-badge.confirmed {
+      color: #bbf7d0;
+      background: rgba(22,163,74,.18);
+    }
+
+    .search-result,
+    .log-item {
+      padding: 13px;
       border-radius: 16px;
-      padding: 10px 6px;
-      text-align: center;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.06);
+      margin-top: 10px;
     }
 
-    .stat-number {
-      font-size: 28px;
-      font-weight: 950;
+    .search-name,
+    .log-name {
+      font-weight: 900;
+      font-size: 17px;
     }
 
-    .stat-label {
-      font-size: 12px;
+    .search-meta,
+    .log-meta {
       color: var(--muted);
-      margin-top: 2px;
-    }
-
-    .small {
-      color: var(--muted);
-      font-size: 14px;
+      font-size: 13px;
+      margin-top: 4px;
       line-height: 1.4;
     }
 
-    .sync-line {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      margin-top: 12px;
-      color: var(--muted);
-      font-size: 13px;
+    .search-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
     }
 
-    .sync-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.09);
+    .section-title {
+      font-size: 19px;
+      font-weight: 950;
+      margin-bottom: 8px;
+    }
+
+    .dashboard-zone {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .zone-card {
+      border-radius: 18px;
       border: 1px solid var(--border);
+      padding: 14px;
+      background: rgba(255,255,255,.07);
+    }
+
+    .zone-card.palco { border-left: 5px solid #a64c61; }
+    .zone-card.salon { border-left: 5px solid #3b82c4; }
+
+    .zone-card-title {
+      font-weight: 950;
+      font-size: 16px;
+    }
+
+    .zone-card-value {
+      font-size: 27px;
+      font-weight: 950;
+      margin-top: 5px;
+    }
+
+    .setting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 0;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+
+    .setting-row:last-child {
+      border-bottom: 0;
+    }
+
+    .switch {
+      position: relative;
+      width: 54px;
+      height: 32px;
+      flex: 0 0 auto;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: #475569;
+      transition: .2s;
+    }
+
+    .slider:before {
+      content: "";
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      left: 4px;
+      top: 4px;
+      border-radius: 50%;
+      background: white;
+      transition: .2s;
+    }
+
+    .switch input:checked + .slider {
+      background: var(--warn);
+    }
+
+    .switch input:checked + .slider:before {
+      transform: translateX(22px);
+    }
+
+    .bottom-nav {
+      position: fixed;
+      left: 50%;
+      bottom: 0;
+      transform: translateX(-50%);
+      width: min(620px, 100%);
+      padding: 9px 10px calc(9px + env(safe-area-inset-bottom));
+      background: rgba(2,6,23,.94);
+      backdrop-filter: blur(18px);
+      border-top: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      z-index: 50;
+    }
+
+    .nav-btn {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      border-radius: 14px;
+      padding: 8px 4px;
+      min-height: 53px;
+      font-size: 11px;
       font-weight: 800;
     }
 
-    .sync-dot {
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      background: #94a3b8;
+    .nav-btn .nav-icon {
+      display: block;
+      font-size: 21px;
+      margin-bottom: 2px;
     }
 
-    .sync-badge.online .sync-dot { background: #22c55e; }
-    .sync-badge.syncing .sync-dot { background: #f59e0b; }
-    .sync-badge.offline .sync-dot { background: #ef4444; }
+    .nav-btn.active {
+      background: rgba(37,99,235,.18);
+      color: white;
+    }
 
-    .notice {
-      margin-top: 12px;
-      padding: 10px 12px;
-      border-radius: 14px;
-      background: rgba(245,158,11,.14);
-      border: 1px solid rgba(245,158,11,.45);
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(0,0,0,.72);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 14px;
+    }
+
+    .modal-card {
+      width: min(580px, 100%);
+      background: #111827;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 18px;
+      margin-bottom: env(safe-area-inset-bottom);
+    }
+
+    .preflight-ok {
+      color: #bbf7d0;
+    }
+
+    .preflight-warning {
       color: #fde68a;
+    }
+
+    .small-text {
+      color: var(--muted);
       font-size: 13px;
-      line-height: 1.35;
+      line-height: 1.4;
     }
   </style>
 </head>
 
 <body>
   <div class="app">
-    <div id="loginView" class="card">
-      <div class="title">Escáner de entradas</div>
-      <div class="subtitle">Control rápido de acceso</div>
+    <section id="loginView" class="card">
+      <div class="title">Control de entradas</div>
+      <div class="subtitle">Introduce la clave y un nombre reconocible para este móvil.</div>
 
       <div class="mt">
-        <input id="pinInput" type="password" inputmode="numeric" placeholder="Clave de acceso" />
-      </div>
-
-      <div class="mt">
-        <button onclick="login()">Entrar</button>
-      </div>
-
-      <p class="small mt">
-        La clave se guarda solo en este móvil.
-      </p>
-    </div>
-
-    <div id="scannerView" class="hidden">
-      <div class="card">
-        <div class="title">Escanear</div>
-        <div class="subtitle">Apunta al QR. Al leerlo pasará a la pantalla de datos.</div>
-
-        <div class="stats mt">
-          <div class="stat">
-            <div class="stat-number" id="totalStat">-</div>
-            <div class="stat-label">Total</div>
-          </div>
-          <div class="stat">
-            <div class="stat-number" id="usedStat">-</div>
-            <div class="stat-label">Dentro</div>
-          </div>
-          <div class="stat">
-            <div class="stat-number" id="pendingStat">-</div>
-            <div class="stat-label">Pendientes</div>
-          </div>
-        </div>
-
-        <div class="sync-line">
-          <div id="syncBadge" class="sync-badge syncing">
-            <span class="sync-dot"></span>
-            <span id="syncText">Sincronizando...</span>
-          </div>
-          <span id="lastSyncText">Sin datos</span>
-        </div>
-
-        <div id="pendingNotice" class="notice hidden">
-          Hay accesos pendientes de confirmar con Google Sheets. Se reintentarán automáticamente.
-        </div>
-
-        <div class="scanner-wrap mt">
-          <div id="reader"></div>
-        </div>
-
-        <div class="mt">
-          <button class="secondary" onclick="restartScanner()">Reiniciar cámara</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="resultView" class="hidden">
-      <div id="resultBox" class="result checking">
-        <div class="icon">⏳</div>
-        <div class="result-title">Comprobando...</div>
+        <input id="deviceNameInput" type="text" maxlength="60" placeholder="Ej.: Puerta principal 1">
       </div>
 
       <div class="mt">
-        <button class="next-btn" onclick="nextScan()">Siguiente</button>
+        <input id="pinInput" type="password" inputmode="numeric" placeholder="Clave de acceso">
+      </div>
+
+      <div class="mt">
+        <button id="loginButton" class="btn" onclick="login()">Entrar</button>
+      </div>
+
+      <div class="small-text mt">La lista se guarda localmente en este dispositivo para que el escaneo sea instantáneo.</div>
+    </section>
+
+    <main id="mainApp" class="hidden">
+      <section id="scannerTab" class="tab-view">
+        <div class="card">
+          <div class="sync-row" style="margin-top:0">
+            <div>
+              <div class="title">Escanear</div>
+              <div id="deviceLabel" class="subtitle"></div>
+            </div>
+            <div id="modeBadge" class="mode-badge">MODO REAL</div>
+          </div>
+
+          <div class="stats mt">
+            <div class="stat">
+              <div id="totalStat" class="stat-number">-</div>
+              <div class="stat-label">Total</div>
+            </div>
+            <div class="stat">
+              <div id="usedStat" class="stat-number">-</div>
+              <div class="stat-label">Dentro</div>
+            </div>
+            <div class="stat">
+              <div id="pendingStat" class="stat-number">-</div>
+              <div class="stat-label">Pendientes</div>
+            </div>
+          </div>
+
+          <div class="sync-row">
+            <div id="syncBadge" class="sync-badge syncing">
+              <span class="sync-dot"></span>
+              <span id="syncText">Sincronizando...</span>
+            </div>
+            <span id="lastSyncText" class="small-text">Sin datos</span>
+          </div>
+
+          <div id="pendingNotice" class="notice hidden"></div>
+
+          <div class="scanner-wrap">
+            <div id="reader"></div>
+          </div>
+
+          <div class="grid2 mt">
+            <button class="btn secondary small" onclick="restartScanner()">Reiniciar cámara</button>
+            <button class="btn secondary small" onclick="syncNow(true)">Forzar sincronización</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="searchTab" class="tab-view hidden">
+        <div class="card">
+          <div class="title">Buscar entrada</div>
+          <div class="subtitle">Busca por estudiante, código, zona, fila o butaca.</div>
+          <input id="searchInput" class="mt" type="search" placeholder="Escribe para buscar..." oninput="renderSearchResults()">
+          <div id="searchResults" class="mt"></div>
+        </div>
+      </section>
+
+      <section id="dashboardTab" class="tab-view hidden">
+        <div class="card">
+          <div class="sync-row" style="margin-top:0">
+            <div>
+              <div class="title">Resumen</div>
+              <div class="subtitle">Estado general del acceso.</div>
+            </div>
+            <button class="btn secondary small inline" onclick="loadDashboard()">Actualizar</button>
+          </div>
+
+          <div class="stats mt">
+            <div class="stat">
+              <div id="dashTotal" class="stat-number">-</div>
+              <div class="stat-label">Total</div>
+            </div>
+            <div class="stat">
+              <div id="dashUsed" class="stat-number">-</div>
+              <div class="stat-label">Dentro</div>
+            </div>
+            <div class="stat">
+              <div id="dashDevices" class="stat-number">-</div>
+              <div class="stat-label">Dispositivos</div>
+            </div>
+          </div>
+
+          <div class="dashboard-zone">
+            <div class="zone-card salon">
+              <div class="zone-card-title">SALÓN</div>
+              <div id="dashSalon" class="zone-card-value">-</div>
+              <div id="dashSalonPending" class="small-text"></div>
+            </div>
+            <div class="zone-card palco">
+              <div class="zone-card-title">PALCO</div>
+              <div id="dashPalco" class="zone-card-value">-</div>
+              <div id="dashPalcoPending" class="small-text"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-title">Últimos movimientos</div>
+          <div id="recentLogs"></div>
+        </div>
+      </section>
+
+      <section id="settingsTab" class="tab-view hidden">
+        <div class="card">
+          <div class="title">Ajustes</div>
+          <div class="subtitle">Opciones del dispositivo y herramientas de coordinación.</div>
+
+          <div class="setting-row mt">
+            <div>
+              <div style="font-weight:900">Modo simulacro</div>
+              <div class="small-text">Valida y registra pruebas sin marcar entradas.</div>
+            </div>
+            <label class="switch">
+              <input id="simulationToggle" type="checkbox" onchange="toggleSimulationMode()">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-row">
+            <div>
+              <div style="font-weight:900">Dispositivo</div>
+              <div id="settingsDeviceName" class="small-text"></div>
+            </div>
+          </div>
+
+          <div class="grid2 mt">
+            <button class="btn secondary small" onclick="syncNow(true)">Actualizar lista completa</button>
+            <button class="btn secondary small" onclick="runPreflight()">Comprobar sistema</button>
+          </div>
+
+          <div class="grid2 mt">
+            <button class="btn secondary small" onclick="createBackupFromApp()">Crear copia de seguridad</button>
+            <button class="btn secondary small" onclick="showUndoModal(lastAcceptedCode)">Deshacer último acceso</button>
+          </div>
+
+          <button class="btn danger mt" onclick="logout()">Cerrar sesión</button>
+        </div>
+
+        <div id="preflightCard" class="card hidden">
+          <div class="section-title">Comprobación del sistema</div>
+          <div id="preflightContent"></div>
+        </div>
+      </section>
+    </main>
+
+    <section id="resultView" class="hidden">
+      <div id="resultBox" class="result ok"></div>
+      <div class="grid2 mt">
+        <button class="btn secondary" onclick="showUndoModal(currentResultCode)">Deshacer</button>
+        <button class="btn" onclick="nextScan()">Siguiente</button>
+      </div>
+    </section>
+  </div>
+
+  <nav id="bottomNav" class="bottom-nav hidden">
+    <button id="navScanner" class="nav-btn active" onclick="showTab('scanner')"><span class="nav-icon">▣</span>Escanear</button>
+    <button id="navSearch" class="nav-btn" onclick="showTab('search')"><span class="nav-icon">⌕</span>Buscar</button>
+    <button id="navDashboard" class="nav-btn" onclick="showTab('dashboard')"><span class="nav-icon">▤</span>Resumen</button>
+    <button id="navSettings" class="nav-btn" onclick="showTab('settings')"><span class="nav-icon">⚙</span>Ajustes</button>
+  </nav>
+
+  <div id="undoModal" class="modal hidden">
+    <div class="modal-card">
+      <div class="section-title">Deshacer acceso</div>
+      <div id="undoDescription" class="small-text"></div>
+      <input id="undoPin" class="mt" type="password" inputmode="numeric" placeholder="Clave de confirmación">
+      <textarea id="undoReason" class="mt" placeholder="Motivo, por ejemplo: escaneo accidental"></textarea>
+      <div class="grid2 mt">
+        <button class="btn secondary" onclick="closeUndoModal()">Cancelar</button>
+        <button id="undoConfirmButton" class="btn danger" onclick="confirmUndo()">Deshacer</button>
       </div>
     </div>
   </div>
 
   <script>
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyXGG5TQd8qmr7yS_HV2OuVGHpf3slXDhi1EJXJPR_hh0kqU7Iyo3Lwz-dLtHwJ4n52/exec'
-    const LOCAL_TICKETS_KEY = 'scanner_ticket_cache_v2'
-    const LOCAL_QUEUE_KEY = 'scanner_checkin_queue_v2'
-    const LOCAL_SYNC_KEY = 'scanner_last_sync_v2'
-    const SYNC_INTERVAL_MS = 10000
 
-    let pin = localStorage.getItem('scanner_pin') || ''
-    let deviceId = localStorage.getItem('scanner_device_id') || ''
+    const KEYS = {
+      token: 'scanner_token_v2',
+      tokenExpiry: 'scanner_token_expiry_v2',
+      deviceName: 'scanner_device_name_v2',
+      tickets: 'scanner_tickets_v2',
+      queue: 'scanner_queue_v2',
+      lastServerTime: 'scanner_last_server_time_v2',
+      dataVersion: 'scanner_data_version_v2',
+      simulation: 'scanner_simulation_v2',
+      lastAcceptedCode: 'scanner_last_accepted_v2'
+    }
+
+    const SYNC_INTERVAL_MS = 8000
+    const FULL_SNAPSHOT_INTERVAL_MS = 5 * 60 * 1000
+    const REPEAT_BLOCK_MS = 4500
+
+    let token = localStorage.getItem(KEYS.token) || ''
+    let tokenExpiry = Number(localStorage.getItem(KEYS.tokenExpiry) || 0)
+    let deviceName = localStorage.getItem(KEYS.deviceName) || ''
+    let dataVersion = localStorage.getItem(KEYS.dataVersion) || ''
+    let lastServerTime = Number(localStorage.getItem(KEYS.lastServerTime) || 0)
+    let simulationMode = localStorage.getItem(KEYS.simulation) === 'true'
+    let lastAcceptedCode = localStorage.getItem(KEYS.lastAcceptedCode) || ''
+
+    let tickets = {}
+    let queue = []
+    let lastFullSnapshotAt = 0
+    let syncTimer = null
+    let syncInProgress = false
     let html5QrCode = null
     let scannerStarted = false
     let scannerPaused = false
     let isProcessing = false
     let lastCode = ''
     let lastCodeTime = 0
-    let audioCtx = null
-    let tickets = {}
-    let queue = []
-    let lastServerTime = Number(localStorage.getItem(LOCAL_SYNC_KEY) || 0)
-    let syncInProgress = false
-    let syncTimer = null
     let currentResultCode = ''
+    let undoTargetCode = ''
+    let audioCtx = null
 
-    if (!deviceId) {
-      deviceId = Math.random().toString(36).slice(2, 8).toUpperCase()
-      localStorage.setItem('scanner_device_id', deviceId)
+    window.addEventListener('load', initialiseApp)
+    window.addEventListener('online', () => syncNow(false))
+    window.addEventListener('offline', () => setSyncStatus('offline', 'Sin conexión'))
+
+    function initialiseApp() {
+      loadLocalState()
+      document.getElementById('deviceNameInput').value = deviceName
+      document.getElementById('simulationToggle').checked = simulationMode
+      renderMode()
+
+      if (token && tokenExpiry > Date.now()) {
+        initialiseWithSession()
+      }
     }
 
-    window.addEventListener('load', () => {
-      restoreLocalState()
-      if (pin) {
-        initialiseWithPin(false)
-      }
-    })
-
-    window.addEventListener('online', () => {
-      setSyncStatus('syncing', 'Reconectando...')
-      syncNow(true)
-    })
-
-    window.addEventListener('offline', () => {
-      setSyncStatus('offline', 'Sin conexión')
-    })
-
-    function restoreLocalState() {
-      try { tickets = JSON.parse(localStorage.getItem(LOCAL_TICKETS_KEY) || '{}') || {} } catch (e) { tickets = {} }
-      try { queue = JSON.parse(localStorage.getItem(LOCAL_QUEUE_KEY) || '[]') || [] } catch (e) { queue = [] }
+    function loadLocalState() {
+      try { tickets = JSON.parse(localStorage.getItem(KEYS.tickets) || '{}') || {} } catch (e) { tickets = {} }
+      try { queue = JSON.parse(localStorage.getItem(KEYS.queue) || '[]') || [] } catch (e) { queue = [] }
+      queue.forEach(item => item.sending = false)
       renderStats()
       updatePendingNotice()
     }
 
     function persistLocalState() {
-      localStorage.setItem(LOCAL_TICKETS_KEY, JSON.stringify(tickets))
-      localStorage.setItem(LOCAL_QUEUE_KEY, JSON.stringify(queue))
-      localStorage.setItem(LOCAL_SYNC_KEY, String(lastServerTime || 0))
+      localStorage.setItem(KEYS.tickets, JSON.stringify(tickets))
+      localStorage.setItem(KEYS.queue, JSON.stringify(queue))
+      localStorage.setItem(KEYS.lastServerTime, String(lastServerTime || 0))
+      localStorage.setItem(KEYS.dataVersion, dataVersion || '')
+      localStorage.setItem(KEYS.lastAcceptedCode, lastAcceptedCode || '')
     }
 
     function login() {
-      const value = document.getElementById('pinInput').value.trim()
-      if (!value) {
+      const pin = document.getElementById('pinInput').value.trim()
+      const requestedDeviceName = document.getElementById('deviceNameInput').value.trim()
+      const button = document.getElementById('loginButton')
+
+      if (!requestedDeviceName) {
+        alert('Pon un nombre a este dispositivo, por ejemplo: Puerta principal 1.')
+        return
+      }
+
+      if (!pin) {
         alert('Introduce la clave.')
         return
       }
 
-      pin = value
+      button.disabled = true
+      button.textContent = 'Entrando...'
       unlockAudio()
-      initialiseWithPin(true)
-    }
 
-    function initialiseWithPin(fromLogin) {
-      setSyncStatus('syncing', 'Cargando entradas...')
+      callAppsScript('login', {
+        pin,
+        deviceName: requestedDeviceName
+      }, res => {
+        button.disabled = false
+        button.textContent = 'Entrar'
 
-      callAppsScript('snapshot', { pin }, (res) => {
         if (!res || res.status !== 'OK') {
-          if (fromLogin) alert(res && res.message ? res.message : 'No se ha podido validar la clave.')
-          pin = ''
-          localStorage.removeItem('scanner_pin')
-          setSyncStatus('offline', 'Clave incorrecta')
+          alert(res && res.message ? res.message : 'No se ha podido iniciar sesión.')
           return
         }
 
-        localStorage.setItem('scanner_pin', pin)
+        token = res.token
+        tokenExpiry = Number(res.expiresAt || 0)
+        deviceName = res.deviceName
+        dataVersion = String(res.dataVersion || '')
+
+        localStorage.setItem(KEYS.token, token)
+        localStorage.setItem(KEYS.tokenExpiry, String(tokenExpiry))
+        localStorage.setItem(KEYS.deviceName, deviceName)
+        localStorage.setItem(KEYS.dataVersion, dataVersion)
+
+        initialiseWithSession(true)
+      }, () => {
+        button.disabled = false
+        button.textContent = 'Entrar'
+        alert('No se ha podido conectar con el servidor.')
+      })
+    }
+
+    function initialiseWithSession(fromLogin = false) {
+      setSyncStatus('syncing', 'Cargando entradas...')
+
+      callAppsScript('snapshot', { token }, res => {
+        if (!res || res.status !== 'OK') {
+          if (res && res.status === 'UNAUTHORIZED') {
+            clearSessionOnly()
+            if (fromLogin) alert(res.message)
+          }
+          return
+        }
+
         applySnapshot(res)
-        showScanner()
+        enterMainApp()
         startSyncLoop()
       }, () => {
-        if (Object.keys(tickets).length > 0 && pin) {
-          localStorage.setItem('scanner_pin', pin)
-          showScanner()
+        if (Object.keys(tickets).length > 0) {
+          enterMainApp()
           startSyncLoop()
           setSyncStatus('offline', 'Modo local')
         } else {
-          alert('No se ha podido descargar la lista de entradas. Comprueba la conexión.')
+          alert('No hay ninguna lista de entradas descargada y no se ha podido conectar.')
         }
       })
     }
 
-    function applySnapshot(res) {
-      const next = {}
-      ;(res.tickets || []).forEach(t => {
-        const existing = tickets[t.code]
-        next[t.code] = {
-          ...t,
-          pending: existing && existing.pending && !t.used,
-          localRequestId: existing ? existing.localRequestId || '' : ''
-        }
-      })
-      tickets = next
-      lastServerTime = Number(res.serverTime || Date.now())
-      persistLocalState()
-      renderStats()
-      updatePendingNotice()
-      setSyncStatus('online', 'Sincronizado')
-      renderLastSync()
-    }
-
-    function startSyncLoop() {
-      if (syncTimer) clearInterval(syncTimer)
-      syncTimer = setInterval(() => syncNow(false), SYNC_INTERVAL_MS)
-      setTimeout(() => syncNow(false), 1200)
-    }
-
-    function syncNow(forceSnapshot) {
-      if (syncInProgress || !pin || !navigator.onLine) return
-      syncInProgress = true
-      setSyncStatus('syncing', 'Sincronizando...')
-
-      const finish = () => {
-        syncInProgress = false
-        renderLastSync()
-      }
-
-      flushQueue(() => {
-        const action = forceSnapshot || !lastServerTime ? 'snapshot' : 'changes'
-        const params = action === 'snapshot' ? { pin } : { pin, since: lastServerTime }
-
-        callAppsScript(action, params, (res) => {
-          if (!res || res.status !== 'OK') {
-            setSyncStatus('offline', 'Error de sincronización')
-            finish()
-            return
-          }
-
-          if (action === 'snapshot') {
-            applySnapshot(res)
-          } else {
-            applyChanges(res)
-          }
-
-          setSyncStatus('online', 'Sincronizado')
-          finish()
-        }, () => {
-          setSyncStatus('offline', 'Sin conexión')
-          finish()
-        })
-      })
-    }
-
-    function applyChanges(res) {
-      ;(res.changes || []).forEach(change => {
-        const current = tickets[change.code] || {}
-        tickets[change.code] = {
-          ...current,
-          ...change,
-          pending: false,
-          localRequestId: ''
-        }
-        queue = queue.filter(item => item.code !== change.code)
-      })
-
-      lastServerTime = Number(res.serverTime || Date.now())
-      persistLocalState()
-      renderStats()
-      updatePendingNotice()
-    }
-
-    function flushQueue(done) {
-      const item = queue.find(q => !q.sending)
-      if (!item) { done(); return }
-
-      item.sending = true
-      persistLocalState()
-
-      callAppsScript('checkin', {
-        code: item.code,
-        pin,
-        checkedBy: 'Escáner ' + deviceId,
-        requestId: item.requestId
-      }, (res) => {
-        item.sending = false
-        handleServerConfirmation(item, res)
-        setTimeout(() => flushQueue(done), 0)
-      }, () => {
-        item.sending = false
-        item.attempts = Number(item.attempts || 0) + 1
-        persistLocalState()
-        done()
-      })
-    }
-
-    function handleServerConfirmation(item, res) {
-      const ticket = tickets[item.code]
-
-      if (!ticket) {
-        queue = queue.filter(q => q.requestId !== item.requestId)
-        persistLocalState()
-        return
-      }
-
-      if (res && (res.status === 'OK' || res.status === 'CONFIRMED')) {
-        Object.assign(ticket, {
-          used: true,
-          pending: false,
-          checkinAt: res.checkinAt || ticket.checkinAt,
-          checkinEpoch: Number(res.checkinEpoch || ticket.checkinEpoch || Date.now()),
-          checkinBy: res.checkinBy || ticket.checkinBy,
-          localRequestId: ''
-        })
-        queue = queue.filter(q => q.requestId !== item.requestId)
-      } else if (res && res.status === 'DUPLICATE') {
-        Object.assign(ticket, {
-          used: true,
-          pending: false,
-          checkinAt: res.checkinAt || ticket.checkinAt,
-          checkinEpoch: Number(res.checkinEpoch || ticket.checkinEpoch || Date.now()),
-          checkinBy: res.checkinBy || ticket.checkinBy,
-          localRequestId: ''
-        })
-        queue = queue.filter(q => q.requestId !== item.requestId)
-
-        if (currentResultCode === item.code) {
-          showResult({ ...ticket, status: 'DUPLICATE', message: 'Conflicto: esta entrada ya se había utilizado.' })
-        }
-      } else if (res && res.status === 'INVALID') {
-        ticket.used = false
-        ticket.pending = false
-        ticket.localRequestId = ''
-        queue = queue.filter(q => q.requestId !== item.requestId)
-
-        if (currentResultCode === item.code) {
-          showResult({ status: 'INVALID', code: item.code, message: res.message || 'Entrada no válida.' })
-        }
-      } else {
-        item.attempts = Number(item.attempts || 0) + 1
-      }
-
-      persistLocalState()
-      renderStats()
-      updatePendingNotice()
-    }
-
-    function unlockAudio() {
-      try {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)()
-        if (audioCtx.state === 'suspended') audioCtx.resume()
-      } catch (e) {}
-    }
-
-    async function showScanner() {
+    function enterMainApp() {
       document.getElementById('loginView').classList.add('hidden')
-      document.getElementById('resultView').classList.add('hidden')
-      document.getElementById('scannerView').classList.remove('hidden')
-      currentResultCode = ''
-      isProcessing = false
-      lastCode = ''
-      lastCodeTime = 0
+      document.getElementById('mainApp').classList.remove('hidden')
+      document.getElementById('bottomNav').classList.remove('hidden')
+      document.getElementById('deviceLabel').textContent = deviceName
+      document.getElementById('settingsDeviceName').textContent = deviceName
+      document.getElementById('simulationToggle').checked = simulationMode
+      renderMode()
       renderStats()
+      showTab('scanner')
+    }
 
+    function logout() {
+      if (!confirm('¿Cerrar la sesión de este dispositivo? La copia local de entradas se conservará.')) return
+      clearSessionOnly()
+      location.reload()
+    }
+
+    function clearSessionOnly() {
+      token = ''
+      tokenExpiry = 0
+      localStorage.removeItem(KEYS.token)
+      localStorage.removeItem(KEYS.tokenExpiry)
+    }
+
+    function showTab(tab) {
+      document.getElementById('resultView').classList.add('hidden')
+      document.getElementById('mainApp').classList.remove('hidden')
+      document.getElementById('bottomNav').classList.remove('hidden')
+
+      ['scanner', 'search', 'dashboard', 'settings'].forEach(name => {
+        document.getElementById(name + 'Tab').classList.toggle('hidden', name !== tab)
+        document.getElementById('nav' + capitalize(name)).classList.toggle('active', name === tab)
+      })
+
+      if (tab === 'scanner') {
+        startOrResumeScanner()
+      } else {
+        pauseScanner()
+      }
+
+      if (tab === 'search') renderSearchResults()
+      if (tab === 'dashboard') loadDashboard()
+    }
+
+    function capitalize(value) {
+      return value.charAt(0).toUpperCase() + value.slice(1)
+    }
+
+    async function startOrResumeScanner() {
       if (!scannerStarted) await startScanner()
       else resumeScanner()
-    }
-
-    function showResultScreen() {
-      document.getElementById('loginView').classList.add('hidden')
-      document.getElementById('scannerView').classList.add('hidden')
-      document.getElementById('resultView').classList.remove('hidden')
     }
 
     async function startScanner() {
@@ -673,17 +988,17 @@
         await html5QrCode.start(
           { facingMode: 'environment' },
           {
-            fps: 30,
+            fps: 28,
             disableFlip: true,
             qrbox: (w, h) => {
-              const size = Math.floor(Math.min(w, h) * 0.92)
+              const size = Math.floor(Math.min(w, h) * .91)
               return { width: size, height: size }
             },
             videoConstraints: {
               facingMode: 'environment',
               width: { ideal: 1280 },
               height: { ideal: 720 },
-              advanced: [{ focusMode: 'continuous' }, { exposureMode: 'continuous' }]
+              advanced: [{ focusMode: 'continuous' }]
             }
           },
           onScanSuccess,
@@ -692,9 +1007,8 @@
 
         scannerStarted = true
         scannerPaused = false
-      } catch (err) {
-        showResultScreen()
-        showError('No se ha podido abrir la cámara.\n' + (err.message || err))
+      } catch (error) {
+        alert('No se ha podido abrir la cámara: ' + (error.message || error))
       }
     }
 
@@ -713,145 +1027,648 @@
           html5QrCode.resume()
           scannerPaused = false
         }
-      } catch (e) { restartScanner() }
+      } catch (e) {
+        restartScanner()
+      }
     }
 
-    async function stopScannerHard() {
+    async function restartScanner() {
       if (html5QrCode) {
         try { await html5QrCode.stop() } catch (e) {}
       }
       scannerStarted = false
       scannerPaused = false
+      await startScanner()
     }
 
     function onScanSuccess(decodedText) {
       const code = normalizeCode(decodedText)
       const now = Date.now()
+
       if (!code || isProcessing) return
-      if (code === lastCode && now - lastCodeTime < 4500) return
+      if (code === lastCode && now - lastCodeTime < REPEAT_BLOCK_MS) return
 
       lastCode = code
       lastCodeTime = now
       isProcessing = true
       pauseScanner()
-      showResultScreen()
-      processLocalCheckIn(code)
+      processLocalCheckIn(code, 'SCAN')
       isProcessing = false
     }
 
-    function processLocalCheckIn(code) {
+    function processLocalCheckIn(code, source) {
       currentResultCode = code
       const ticket = tickets[code]
 
       if (!ticket) {
-        showResult({ status: 'INVALID', code, message: 'El código no corresponde a ninguna entrada cargada.' })
+        showResult({
+          status: 'INVALID',
+          code,
+          message: 'El código no corresponde a ninguna entrada cargada.'
+        })
+        return
+      }
+
+      if (simulationMode) {
+        const requestId = makeRequestId()
+        queue.push({
+          code,
+          requestId,
+          mode: 'SIMULATION',
+          source,
+          createdAt: Date.now(),
+          attempts: 0,
+          sending: false
+        })
+        persistLocalState()
+        updatePendingNotice()
+        showResult({
+          ...ticket,
+          status: ticket.used ? 'DUPLICATE' : 'SIMULATION_OK',
+          message: ticket.used
+            ? 'En modo real ya figura como utilizada.'
+            : 'Simulación correcta. No se ha marcado como utilizada.',
+          localPending: true
+        })
+        syncNow(false)
         return
       }
 
       if (ticket.used || ticket.pending) {
-        showResult({ ...ticket, status: 'DUPLICATE', message: ticket.pending ? 'Esta entrada se acaba de registrar en este dispositivo.' : 'Esta entrada ya había sido utilizada.' })
+        showResult({
+          ...ticket,
+          status: 'DUPLICATE',
+          message: ticket.pending
+            ? 'Esta entrada se acaba de registrar en este dispositivo.'
+            : 'Esta entrada ya había sido utilizada.'
+        })
         return
       }
 
-      const requestId = deviceId + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7)
+      const requestId = makeRequestId()
       const localNow = new Date()
 
       Object.assign(ticket, {
         used: true,
         pending: true,
-        localRequestId: requestId,
-        checkinAt: localNow.toLocaleString('es-ES'),
+        checkinAt: formatLocalDate(localNow),
         checkinEpoch: localNow.getTime(),
-        checkinBy: 'Escáner ' + deviceId
+        checkinBy: deviceName,
+        localRequestId: requestId
       })
 
       queue.push({
-        requestId,
         code,
+        requestId,
+        mode: 'REAL',
+        source,
         createdAt: Date.now(),
         attempts: 0,
         sending: false
       })
 
+      lastAcceptedCode = code
       persistLocalState()
       renderStats()
       updatePendingNotice()
-      showResult({ ...ticket, status: 'OK', message: 'Acceso permitido', localInstant: true })
-      setTimeout(() => syncNow(false), 50)
+      showResult({
+        ...ticket,
+        status: 'OK',
+        message: 'Acceso permitido.',
+        localPending: true
+      })
+      syncNow(false)
     }
 
-    function nextScan() { showScanner() }
+    function makeRequestId() {
+      return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 9)
+    }
+
+    function nextScan() {
+      currentResultCode = ''
+      document.getElementById('resultView').classList.add('hidden')
+      document.getElementById('mainApp').classList.remove('hidden')
+      document.getElementById('bottomNav').classList.remove('hidden')
+      showTab('scanner')
+      setTimeout(() => resumeScanner(), 550)
+    }
+
+    function showResult(res) {
+      document.getElementById('mainApp').classList.add('hidden')
+      document.getElementById('bottomNav').classList.add('hidden')
+      document.getElementById('resultView').classList.remove('hidden')
+
+      let css = 'error'
+      let icon = '❌'
+      let title = res.message || 'Error'
+
+      if (res.status === 'OK' || res.status === 'CONFIRMED') {
+        css = 'ok'
+        icon = '✅'
+        title = 'Acceso permitido'
+        playSuccess()
+        vibrate([70])
+      } else if (res.status === 'SIMULATION_OK') {
+        css = 'simulation'
+        icon = '🧪'
+        title = 'Simulación correcta'
+        playSuccess()
+        vibrate([50])
+      } else if (res.status === 'DUPLICATE') {
+        css = 'duplicate'
+        icon = '⚠️'
+        title = 'Entrada ya utilizada'
+        playWarning()
+        vibrate([120, 70, 120])
+      } else {
+        css = 'invalid'
+        icon = '❌'
+        title = 'Entrada no válida'
+        playError()
+        vibrate([250])
+      }
+
+      const zoneClass = String(res.zona || '').includes('PALCO') ? 'palco' : 'salon'
+      const hasSeat = res.fila || res.butaca
+      const confirmation = res.localPending
+        ? '<div id="resultConfirmation" class="confirm-badge pending">⏳ Pendiente de guardar</div>'
+        : res.status === 'OK' || res.status === 'CONFIRMED'
+          ? '<div id="resultConfirmation" class="confirm-badge confirmed">☁️ Guardado en Google Sheets</div>'
+          : ''
+
+      document.getElementById('resultBox').className = 'result ' + css
+      document.getElementById('resultBox').innerHTML = `
+        <div class="result-icon">${icon}</div>
+        <div class="result-title">${escapeHtml(title)}</div>
+        ${res.estudiante ? `<div class="result-name">${escapeHtml(res.estudiante)}</div>` : ''}
+        ${res.zona ? `<div><span class="zone-badge ${zoneClass}">${escapeHtml(res.zona)}</span></div>` : ''}
+        ${hasSeat ? `
+          <div class="seat-grid">
+            <div class="seat-box"><div class="seat-label">Fila</div><div class="seat-value">${escapeHtml(res.fila || '-')}</div></div>
+            <div class="seat-box"><div class="seat-label">Butaca</div><div class="seat-value">${escapeHtml(res.butaca || '-')}</div></div>
+          </div>` : ''}
+        ${res.checkinAt ? `
+          <div class="time-box">
+            <div class="time-label">${res.status === 'DUPLICATE' ? 'Escaneada originalmente' : 'Hora de acceso'}</div>
+            <div class="time-value">${escapeHtml(res.checkinAt)}</div>
+          </div>` : ''}
+        ${confirmation}
+        <div class="meta">${escapeHtml(res.code || '')}</div>
+        ${res.message && res.message !== title ? `<div class="meta">${escapeHtml(res.message)}</div>` : ''}
+      `
+    }
+
+    function markCurrentResultConfirmed() {
+      const badge = document.getElementById('resultConfirmation')
+      if (badge) {
+        badge.className = 'confirm-badge confirmed'
+        badge.textContent = '☁️ Guardado en Google Sheets'
+      }
+    }
+
+    function startSyncLoop() {
+      if (syncTimer) clearInterval(syncTimer)
+      syncTimer = setInterval(() => syncNow(false), SYNC_INTERVAL_MS)
+      setTimeout(() => syncNow(false), 900)
+    }
+
+    function syncNow(forceSnapshot) {
+      if (syncInProgress || !token) return
+      if (!navigator.onLine) {
+        setSyncStatus('offline', 'Sin conexión')
+        return
+      }
+
+      syncInProgress = true
+      setSyncStatus('syncing', 'Sincronizando...')
+
+      flushQueue(() => {
+        const needsFullSnapshot = forceSnapshot ||
+          !lastServerTime ||
+          Date.now() - lastFullSnapshotAt > FULL_SNAPSHOT_INTERVAL_MS
+
+        const action = needsFullSnapshot ? 'snapshot' : 'changes'
+        const params = needsFullSnapshot
+          ? { token }
+          : { token, since: lastServerTime }
+
+        callAppsScript(action, params, res => {
+          syncInProgress = false
+
+          if (!res || res.status !== 'OK') {
+            handleApiSessionError(res)
+            setSyncStatus('offline', 'Error de sincronización')
+            return
+          }
+
+          if (action === 'snapshot') applySnapshot(res)
+          else applyChanges(res)
+
+          setSyncStatus('online', 'Sincronizado')
+          renderLastSync()
+        }, () => {
+          syncInProgress = false
+          setSyncStatus('offline', 'Sin conexión')
+        })
+      })
+    }
+
+    function flushQueue(done) {
+      const item = queue.find(q => !q.sending)
+      if (!item) {
+        done()
+        return
+      }
+
+      item.sending = true
+      persistLocalState()
+
+      callAppsScript('checkin', {
+        token,
+        code: item.code,
+        requestId: item.requestId,
+        mode: item.mode,
+        source: item.source
+      }, res => {
+        item.sending = false
+        handleServerConfirmation(item, res)
+        setTimeout(() => flushQueue(done), 0)
+      }, () => {
+        item.sending = false
+        item.attempts = Number(item.attempts || 0) + 1
+        persistLocalState()
+        done()
+      })
+    }
+
+    function handleServerConfirmation(item, res) {
+      if (res && res.status === 'UNAUTHORIZED') {
+        handleApiSessionError(res)
+        return
+      }
+
+      const ticket = tickets[item.code]
+
+      if (item.mode === 'SIMULATION') {
+        if (res && ['SIMULATION_OK', 'DUPLICATE'].includes(res.status)) {
+          queue = queue.filter(q => q.requestId !== item.requestId)
+          if (currentResultCode === item.code) markCurrentResultConfirmed()
+        } else {
+          item.attempts = Number(item.attempts || 0) + 1
+        }
+        persistLocalState()
+        updatePendingNotice()
+        return
+      }
+
+      if (!ticket) {
+        queue = queue.filter(q => q.requestId !== item.requestId)
+        persistLocalState()
+        return
+      }
+
+      if (res && ['OK', 'CONFIRMED'].includes(res.status)) {
+        Object.assign(ticket, {
+          used: true,
+          pending: false,
+          checkinAt: res.checkinAt || ticket.checkinAt,
+          checkinEpoch: Number(res.checkinEpoch || ticket.checkinEpoch || Date.now()),
+          checkinBy: res.checkinBy || ticket.checkinBy,
+          localRequestId: ''
+        })
+        queue = queue.filter(q => q.requestId !== item.requestId)
+        if (currentResultCode === item.code) markCurrentResultConfirmed()
+      } else if (res && res.status === 'DUPLICATE') {
+        Object.assign(ticket, {
+          used: true,
+          pending: false,
+          checkinAt: res.checkinAt || ticket.checkinAt,
+          checkinEpoch: Number(res.checkinEpoch || ticket.checkinEpoch || Date.now()),
+          checkinBy: res.checkinBy || ticket.checkinBy,
+          localRequestId: ''
+        })
+        queue = queue.filter(q => q.requestId !== item.requestId)
+
+        if (currentResultCode === item.code) {
+          showResult({ ...ticket, status: 'DUPLICATE', message: 'Conflicto: otro dispositivo ya había registrado esta entrada.' })
+        }
+      } else if (res && res.status === 'INVALID') {
+        ticket.used = false
+        ticket.pending = false
+        ticket.localRequestId = ''
+        queue = queue.filter(q => q.requestId !== item.requestId)
+        if (currentResultCode === item.code) showResult({ status: 'INVALID', code: item.code, message: res.message })
+      } else {
+        item.attempts = Number(item.attempts || 0) + 1
+      }
+
+      persistLocalState()
+      renderStats()
+      updatePendingNotice()
+    }
+
+    function applySnapshot(res) {
+      const next = {}
+      ;(res.tickets || []).forEach(serverTicket => {
+        const local = tickets[serverTicket.code]
+        const queued = queue.some(q => q.code === serverTicket.code && q.mode === 'REAL')
+        next[serverTicket.code] = {
+          ...serverTicket,
+          pending: queued && !serverTicket.used,
+          localRequestId: local ? local.localRequestId || '' : ''
+        }
+      })
+
+      tickets = next
+      lastServerTime = Number(res.serverTime || Date.now())
+      dataVersion = String(res.dataVersion || dataVersion)
+      lastFullSnapshotAt = Date.now()
+      queue = queue.filter(item => item.mode === 'SIMULATION' || !tickets[item.code] || !tickets[item.code].used || tickets[item.code].pending)
+      persistLocalState()
+      renderStats()
+      updatePendingNotice()
+      renderSearchResults()
+    }
+
+    function applyChanges(res) {
+      if (String(res.dataVersion || '') && dataVersion && String(res.dataVersion) !== dataVersion) {
+        lastServerTime = 0
+        dataVersion = String(res.dataVersion)
+        persistLocalState()
+        setTimeout(() => syncNow(true), 50)
+        return
+      }
+
+      ;(res.changes || []).forEach(change => {
+        const ticket = tickets[change.code]
+        if (!ticket) return
+        Object.assign(ticket, change, {
+          pending: false,
+          localRequestId: ''
+        })
+        queue = queue.filter(q => q.code !== change.code || q.mode === 'SIMULATION')
+      })
+
+      lastServerTime = Number(res.serverTime || Date.now())
+      dataVersion = String(res.dataVersion || dataVersion)
+      persistLocalState()
+      renderStats()
+      updatePendingNotice()
+      renderSearchResults()
+    }
+
+    function handleApiSessionError(res) {
+      if (res && res.status === 'UNAUTHORIZED') {
+        clearSessionOnly()
+        alert('La sesión ha caducado. Vuelve a entrar. La copia local se conserva.')
+      }
+    }
 
     function renderStats() {
-      const list = Object.values(tickets)
-      const total = list.length
-      const used = list.filter(t => t.used || t.pending).length
+      const values = Object.values(tickets)
+      const total = values.length
+      const used = values.filter(t => t.used).length
       document.getElementById('totalStat').textContent = total || '-'
-      document.getElementById('usedStat').textContent = total ? used : '-'
-      document.getElementById('pendingStat').textContent = total ? Math.max(total - used, 0) : '-'
+      document.getElementById('usedStat').textContent = used
+      document.getElementById('pendingStat').textContent = Math.max(total - used, 0)
+    }
+
+    function setSyncStatus(state, text) {
+      const badge = document.getElementById('syncBadge')
+      if (!badge) return
+      badge.className = 'sync-badge ' + state
+      document.getElementById('syncText').textContent = text
+    }
+
+    function renderLastSync() {
+      const el = document.getElementById('lastSyncText')
+      if (el) el.textContent = 'Ahora'
     }
 
     function updatePendingNotice() {
       const notice = document.getElementById('pendingNotice')
       if (!notice) return
-      notice.classList.toggle('hidden', queue.length === 0)
-      if (queue.length > 0) {
-        notice.textContent = queue.length === 1
-          ? 'Hay 1 acceso pendiente de confirmar con Google Sheets. Se reintentará automáticamente.'
-          : 'Hay ' + queue.length + ' accesos pendientes de confirmar con Google Sheets. Se reintentarán automáticamente.'
+      const pending = queue.length
+      notice.classList.toggle('hidden', pending === 0)
+      if (pending > 0) {
+        notice.textContent = pending + (pending === 1 ? ' operación pendiente de sincronizar.' : ' operaciones pendientes de sincronizar.')
       }
     }
 
-    function setSyncStatus(mode, text) {
-      const badge = document.getElementById('syncBadge')
-      const label = document.getElementById('syncText')
-      if (!badge || !label) return
-      badge.className = 'sync-badge ' + mode
-      label.textContent = text
+    function renderSearchResults() {
+      const container = document.getElementById('searchResults')
+      const input = document.getElementById('searchInput')
+      if (!container || !input) return
+      const query = normalizeSearch(input.value)
+
+      if (!query) {
+        container.innerHTML = '<div class="small-text">Escribe al menos parte del nombre, código, zona, fila o butaca.</div>'
+        return
+      }
+
+      const results = Object.values(tickets)
+        .filter(ticket => {
+          const haystack = normalizeSearch([
+            ticket.code,
+            ticket.estudiante,
+            ticket.nombre,
+            ticket.zona,
+            'fila ' + ticket.fila,
+            'butaca ' + ticket.butaca,
+            ticket.fila,
+            ticket.butaca
+          ].join(' '))
+          return haystack.includes(query)
+        })
+        .slice(0, 30)
+
+      if (!results.length) {
+        container.innerHTML = '<div class="notice">No se ha encontrado ninguna entrada.</div>'
+        return
+      }
+
+      container.innerHTML = results.map(ticket => `
+        <div class="search-result">
+          <div class="search-name">${escapeHtml(ticket.estudiante || 'Sin estudiante')}</div>
+          <div class="search-meta">${escapeHtml(ticket.zona)} · Fila ${escapeHtml(ticket.fila)} · Butaca ${escapeHtml(ticket.butaca)}<br>${escapeHtml(ticket.code)}<br>${ticket.used ? '⚠️ Utilizada' : '✅ Disponible'}</div>
+          <div class="search-actions">
+            <button class="btn small ${ticket.used ? 'secondary' : ''}" onclick="manualCheckIn('${escapeJs(ticket.code)}')">${ticket.used ? 'Ver estado' : 'Registrar acceso'}</button>
+            <button class="btn secondary small" onclick="showUndoModal('${escapeJs(ticket.code)}')">Deshacer</button>
+          </div>
+        </div>`).join('')
     }
 
-    function renderLastSync() {
-      const el = document.getElementById('lastSyncText')
-      if (!el) return
-      el.textContent = lastServerTime ? 'Última: ' + new Date().toLocaleTimeString('es-ES') : 'Sin datos'
+    function manualCheckIn(code) {
+      processLocalCheckIn(code, 'MANUAL')
     }
 
-    function callAppsScript(action, params, success, failure) {
-      const callbackName = 'cb_' + Math.random().toString(36).slice(2)
+    function loadDashboard() {
+      callAppsScript('dashboard', { token }, res => {
+        if (!res || res.status !== 'OK') {
+          handleApiSessionError(res)
+          return
+        }
+
+        const stats = res.stats || {}
+        document.getElementById('dashTotal').textContent = stats.total ?? '-'
+        document.getElementById('dashUsed').textContent = stats.used ?? '-'
+        document.getElementById('dashDevices').textContent = stats.activeDevices ?? '-'
+        document.getElementById('dashSalon').textContent = `${stats.salon?.used ?? 0} / ${stats.salon?.total ?? 0}`
+        document.getElementById('dashSalonPending').textContent = `${stats.salon?.pending ?? 0} pendientes`
+        document.getElementById('dashPalco').textContent = `${stats.palco?.used ?? 0} / ${stats.palco?.total ?? 0}`
+        document.getElementById('dashPalcoPending').textContent = `${stats.palco?.pending ?? 0} pendientes`
+
+        const logs = res.recentLogs || []
+        document.getElementById('recentLogs').innerHTML = logs.length
+          ? logs.map(log => `
+            <div class="log-item">
+              <div class="log-name">${escapeHtml(log.estudiante || log.result)}</div>
+              <div class="log-meta">${escapeHtml(log.result)} · ${escapeHtml(log.zona)} ${log.fila ? '· Fila ' + escapeHtml(log.fila) : ''} ${log.butaca ? '· Butaca ' + escapeHtml(log.butaca) : ''}<br>${escapeHtml(log.date)} · ${escapeHtml(log.deviceName)}</div>
+            </div>`).join('')
+          : '<div class="small-text">Todavía no hay movimientos registrados.</div>'
+      })
+    }
+
+    function toggleSimulationMode() {
+      simulationMode = document.getElementById('simulationToggle').checked
+      localStorage.setItem(KEYS.simulation, String(simulationMode))
+      renderMode()
+    }
+
+    function renderMode() {
+      const badge = document.getElementById('modeBadge')
+      if (!badge) return
+      badge.textContent = simulationMode ? 'MODO SIMULACRO' : 'MODO REAL'
+      badge.className = 'mode-badge' + (simulationMode ? ' simulation' : '')
+    }
+
+    function showUndoModal(code) {
+      const ticket = tickets[code]
+      if (!code || !ticket) {
+        alert('No hay ninguna entrada seleccionada para deshacer.')
+        return
+      }
+      undoTargetCode = code
+      document.getElementById('undoDescription').textContent = `${ticket.estudiante} · ${ticket.zona} · Fila ${ticket.fila} · Butaca ${ticket.butaca}`
+      document.getElementById('undoPin').value = ''
+      document.getElementById('undoReason').value = ''
+      document.getElementById('undoModal').classList.remove('hidden')
+    }
+
+    function closeUndoModal() {
+      document.getElementById('undoModal').classList.add('hidden')
+      undoTargetCode = ''
+    }
+
+    function confirmUndo() {
+      const pin = document.getElementById('undoPin').value.trim()
+      const reason = document.getElementById('undoReason').value.trim()
+      const button = document.getElementById('undoConfirmButton')
+
+      if (!pin || reason.length < 3) {
+        alert('Introduce la clave y un motivo breve.')
+        return
+      }
+
+      button.disabled = true
+      button.textContent = 'Deshaciendo...'
+
+      callAppsScript('undo', {
+        token,
+        code: undoTargetCode,
+        adminPin: pin,
+        reason
+      }, res => {
+        button.disabled = false
+        button.textContent = 'Deshacer'
+
+        if (!res || res.status !== 'OK') {
+          alert(res && res.message ? res.message : 'No se ha podido deshacer el acceso.')
+          return
+        }
+
+        const ticket = tickets[undoTargetCode]
+        if (ticket) {
+          Object.assign(ticket, {
+            used: false,
+            pending: false,
+            checkinAt: '',
+            checkinEpoch: 0,
+            checkinBy: '',
+            localRequestId: ''
+          })
+        }
+        queue = queue.filter(q => q.code !== undoTargetCode)
+        persistLocalState()
+        renderStats()
+        updatePendingNotice()
+        closeUndoModal()
+        alert('La entrada vuelve a estar disponible.')
+        showTab('search')
+        renderSearchResults()
+      }, () => {
+        button.disabled = false
+        button.textContent = 'Deshacer'
+        alert('No se ha podido conectar con el servidor.')
+      })
+    }
+
+    function runPreflight() {
+      const card = document.getElementById('preflightCard')
+      const content = document.getElementById('preflightContent')
+      card.classList.remove('hidden')
+      content.innerHTML = '<div class="small-text">Comprobando...</div>'
+
+      callAppsScript('preflight', { token }, res => {
+        if (!res) return
+        const cls = res.status === 'OK' ? 'preflight-ok' : 'preflight-warning'
+        content.innerHTML = `
+          <div class="${cls}" style="font-weight:900">${res.status === 'OK' ? '✓ Sistema correcto' : '⚠ Hay incidencias'}</div>
+          <div class="small-text mt">Entradas: ${res.total} · Salón: ${res.salon} · Palco: ${res.palco} · Incidencias: ${res.issueCount}</div>
+          ${(res.issues || []).length ? `<div class="mt">${res.issues.map(issue => `<div class="notice">${escapeHtml(issue)}</div>`).join('')}</div>` : ''}
+        `
+      })
+    }
+
+    function createBackupFromApp() {
+      const pin = prompt('Introduce la clave para crear la copia de seguridad:')
+      if (!pin) return
+
+      callAppsScript('backup', { token, adminPin: pin }, res => {
+        if (!res || res.status !== 'OK') {
+          alert(res && res.message ? res.message : 'No se ha podido crear la copia.')
+          return
+        }
+        alert('Copia creada: ' + res.sheetName)
+      })
+    }
+
+    function callAppsScript(action, params, onSuccess, onError) {
+      const callbackName = '__cb_' + Date.now() + '_' + Math.random().toString(36).slice(2)
       const script = document.createElement('script')
-      let finished = false
+      const timeout = setTimeout(() => cleanup(new Error('Tiempo de espera agotado')), 15000)
 
-      const cleanup = () => {
-        if (finished) return
-        finished = true
+      function cleanup(error, response) {
         clearTimeout(timeout)
         try { delete window[callbackName] } catch (e) {}
-        script.remove()
+        if (script.parentNode) script.parentNode.removeChild(script)
+        if (error) {
+          if (onError) onError(error)
+        } else if (onSuccess) {
+          onSuccess(response)
+        }
       }
 
-      window[callbackName] = response => {
-        cleanup()
-        if (success) success(response)
-      }
+      window[callbackName] = response => cleanup(null, response)
+      script.onerror = () => cleanup(new Error('Error de red'))
 
       const url = new URL(APPS_SCRIPT_URL)
       url.searchParams.set('action', action)
       url.searchParams.set('callback', callbackName)
       url.searchParams.set('_', Date.now())
-      Object.keys(params || {}).forEach(key => url.searchParams.set(key, params[key]))
-
+      Object.entries(params || {}).forEach(([key, value]) => url.searchParams.set(key, value ?? ''))
       script.src = url.toString()
-      script.onerror = () => {
-        cleanup()
-        if (failure) failure('No se ha podido conectar con el servidor.')
-      }
-
-      const timeout = setTimeout(() => {
-        cleanup()
-        if (failure) failure('El servidor ha tardado demasiado en responder.')
-      }, 15000)
-
-      document.body.appendChild(script)
+      document.head.appendChild(script)
     }
 
     function normalizeCode(raw) {
@@ -860,107 +1677,78 @@
         const url = new URL(text)
         const code = url.searchParams.get('code') || url.searchParams.get('codigo')
         if (code) return code.trim().toUpperCase()
-        const parts = url.pathname.split('/').filter(Boolean)
-        if (parts.length > 0) return parts[parts.length - 1].trim().toUpperCase()
       } catch (e) {}
       return text.toUpperCase()
     }
 
-    function showResult(res) {
-      let className = 'result error'
-      let icon = '❌'
-      let title = res.message || 'Error'
-
-      if (res.status === 'OK' || res.status === 'CONFIRMED') {
-        className = 'result ok'
-        icon = '✅'
-        title = 'Acceso permitido'
-        playSuccessBeep()
-      } else if (res.status === 'DUPLICATE') {
-        className = 'result duplicate'
-        icon = '⚠️'
-        title = 'Entrada ya utilizada'
-        playDuplicateBeep()
-      } else if (res.status === 'INVALID') {
-        className = 'result invalid'
-        icon = '❌'
-        title = 'Entrada no válida'
-        playErrorBeep()
-      } else {
-        playErrorBeep()
-      }
-
-      const fila = res.fila || '-'
-      const butaca = res.butaca || '-'
-      const hora = res.checkinAt || ''
-      const name = res.estudiante || res.nombre || ''
-      const zone = res.zona || ''
-      const pendingText = res.pending || res.localInstant ? '<div class="meta">Guardando en Google Sheets en segundo plano…</div>' : ''
-
-      const box = document.getElementById('resultBox')
-      box.className = className
-      box.innerHTML = `
-        <div>
-          <div class="icon">${icon}</div>
-          <div class="result-title">${escapeHtml(title)}</div>
-          ${name ? `<div class="name">${escapeHtml(name)}</div>` : ''}
-          ${zone ? `<div class="meta">${escapeHtml(zone)}</div>` : ''}
-          ${(res.status === 'OK' || res.status === 'CONFIRMED' || res.status === 'DUPLICATE') ? `
-            <div class="seat">
-              <div class="seat-box"><div class="seat-label">Fila</div><div class="seat-value">${escapeHtml(fila)}</div></div>
-              <div class="seat-box"><div class="seat-label">Butaca</div><div class="seat-value">${escapeHtml(butaca)}</div></div>
-            </div>
-          ` : ''}
-          ${hora ? `<div class="time-box"><div class="time-label">${res.status === 'DUPLICATE' ? 'Escaneada originalmente' : 'Hora de acceso'}</div><div class="time-value">${escapeHtml(hora)}</div></div>` : ''}
-          <div class="meta">${escapeHtml(res.code || '')}</div>
-          ${pendingText}
-        </div>
-      `
+    function normalizeSearch(value) {
+      return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim()
     }
 
-    function showError(message) {
-      playErrorBeep()
-      const box = document.getElementById('resultBox')
-      box.className = 'result error'
-      box.innerHTML = `<div><div class="icon">❌</div><div class="result-title">Error</div><div class="meta">${escapeHtml(message)}</div></div>`
+    function formatLocalDate(date) {
+      return new Intl.DateTimeFormat('es-ES', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      }).format(date)
     }
 
-    async function restartScanner() {
-      isProcessing = false
-      lastCode = ''
-      lastCodeTime = 0
-      await stopScannerHard()
-      await startScanner()
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
     }
 
-    function playTone(frequency, duration, volume = 0.08) {
+    function escapeJs(value) {
+      return String(value || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+    }
+
+    function vibrate(pattern) {
+      try { navigator.vibrate?.(pattern) } catch (e) {}
+    }
+
+    function unlockAudio() {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)()
+        if (audioCtx.state === 'suspended') audioCtx.resume()
+      } catch (e) {}
+    }
+
+    function tone(frequency, duration, volume = .22) {
       try {
         unlockAudio()
         if (!audioCtx) return
         const oscillator = audioCtx.createOscillator()
-        const gainNode = audioCtx.createGain()
-        oscillator.type = 'sine'
+        const gain = audioCtx.createGain()
         oscillator.frequency.value = frequency
-        gainNode.gain.value = volume
-        oscillator.connect(gainNode)
-        gainNode.connect(audioCtx.destination)
-        const now = audioCtx.currentTime
-        oscillator.start(now)
-        oscillator.stop(now + duration)
+        oscillator.type = 'sine'
+        gain.gain.value = volume
+        oscillator.connect(gain)
+        gain.connect(audioCtx.destination)
+        oscillator.start()
+        gain.gain.exponentialRampToValueAtTime(.0001, audioCtx.currentTime + duration)
+        oscillator.stop(audioCtx.currentTime + duration)
       } catch (e) {}
     }
 
-    function playSuccessBeep() { playTone(950, 0.10, 0.08) }
-    function playDuplicateBeep() { playTone(700, 0.09, 0.08); setTimeout(() => playTone(700, 0.09, 0.08), 140) }
-    function playErrorBeep() { playTone(330, 0.16, 0.09) }
+    function playSuccess() {
+      tone(880, .13)
+      setTimeout(() => tone(1175, .16), 120)
+    }
 
-    function escapeHtml(str) {
-      return String(str || '')
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#039;')
+    function playWarning() {
+      tone(520, .2)
+      setTimeout(() => tone(420, .25), 180)
+    }
+
+    function playError() {
+      tone(250, .34, .25)
     }
   </script>
 </body>
