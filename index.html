@@ -1035,7 +1035,17 @@
     }
 
     async function startScannerInternal() {
-      if (scannerStarted) return
+      if (html5QrCode && scannerStarted) {
+        if (scannerPaused) {
+          try {
+            html5QrCode.resume()
+            scannerPaused = false
+          } catch (error) {
+            console.warn('No se pudo reanudar la cámara:', error)
+          }
+        }
+        return
+      }
 
       if (!html5QrCode) {
         html5QrCode = new Html5Qrcode('reader', {
@@ -1068,15 +1078,21 @@
     }
 
     async function stopScannerInternal() {
-      if (!html5QrCode || !scannerStarted) {
-        scannerStarted = false
-        scannerPaused = false
+      /*
+       * No destruimos el lector al cambiar de pestaña.
+       * Solo lo pausamos. Así evitamos el error interno
+       * de html5-qrcode con removeChild() en algunos Android.
+       */
+      if (!html5QrCode || !scannerStarted || scannerPaused) {
         return
       }
 
-      await html5QrCode.stop()
-      scannerStarted = false
-      scannerPaused = false
+      try {
+        html5QrCode.pause(true)
+        scannerPaused = true
+      } catch (error) {
+        console.warn('No se pudo pausar la cámara:', error)
+      }
     }
 
     async function startScanner() {
@@ -1091,17 +1107,50 @@
       try {
         await setScannerRunning(false)
       } catch (error) {
-        console.warn('No se pudo detener la cámara:', error)
+        console.warn('No se pudo pausar la cámara:', error)
       }
     }
 
     async function restartScanner() {
+      /*
+       * Reinicio completo solo cuando el usuario lo pide.
+       * Primero intentamos detener el lector y, aunque la
+       * librería lance un error interno, reconstruimos el
+       * contenedor de forma segura.
+       */
+      scannerDesiredRunning = false
+
       try {
-        await setScannerRunning(false)
-        await setScannerRunning(true)
-      } catch (error) {
-        alert('No se ha podido reiniciar la cámara: ' + (error.message || error))
+        if (html5QrCode && scannerStarted) {
+          if (scannerPaused) {
+            try {
+              html5QrCode.resume()
+              scannerPaused = false
+            } catch (error) {}
+          }
+
+          try {
+            await html5QrCode.stop()
+          } catch (error) {
+            console.warn('Error interno al detener la cámara:', error)
+          }
+        }
+      } finally {
+        scannerStarted = false
+        scannerPaused = false
+        html5QrCode = null
+
+        const reader = document.getElementById('reader')
+        if (reader) {
+          while (reader.firstChild) {
+            reader.removeChild(reader.firstChild)
+          }
+        }
       }
+
+      await new Promise(resolve => setTimeout(resolve, 250))
+      scannerDesiredRunning = true
+      await startScannerInternal()
     }
 
     function onScanSuccess(decodedText) {
