@@ -820,6 +820,14 @@
     let html5QrCode = null
     let scannerStarted = false
     let scannerPaused = false
+
+    // Motor nativo para Android/Chrome/Samsung.
+    let nativeVideo = null
+    let nativeStream = null
+    let nativeDetector = null
+    let nativeScanFrame = null
+    let nativeLastDetectionAt = 0
+    let scannerEngine = ''
     let isProcessing = false
     let lastCode = ''
     let lastCodeTime = 0
@@ -1033,11 +1041,204 @@
       return value.charAt(0).toUpperCase() + value.slice(1)
     }
 
+    function isAndroidDevice() {
+      return /Android/i.test(navigator.userAgent || '')
+    }
+
+
+    function canUseNativeBarcodeDetector() {
+      return (
+        isAndroidDevice() &&
+        'BarcodeDetector' in window &&
+        navigator.mediaDevices &&
+        typeof navigator.mediaDevices.getUserMedia === 'function'
+      )
+    }
+
+
     async function startScanner() {
-      if (scannerStarted && html5QrCode) {
+      if (scannerStarted) {
         return
       }
 
+      /*
+       * En Android usamos primero la API nativa del navegador.
+       * Evita el fallo conocido de pantalla negra de html5-qrcode
+       * en algunos dispositivos Samsung con Chrome.
+       *
+       * En iPhone y en navegadores sin BarcodeDetector se mantiene
+       * html5-qrcode, que es el motor que ya funciona correctamente.
+       */
+      if (canUseNativeBarcodeDetector()) {
+        try {
+          scannerEngine = 'native'
+          await startNativeScanner()
+          scannerStarted = true
+          scannerPaused = false
+          return
+        } catch (error) {
+          console.warn(
+            'El lector nativo no ha podido iniciarse. Se prueba html5-qrcode:',
+            error
+          )
+          await stopNativeScanner()
+        }
+      }
+
+      await startHtml5Scanner()
+      scannerEngine = 'html5'
+      scannerStarted = true
+      scannerPaused = false
+    }
+
+
+    async function startNativeScanner() {
+      const reader = document.getElementById('reader')
+
+      while (reader.firstChild) {
+        reader.removeChild(reader.firstChild)
+      }
+
+      nativeVideo = document.createElement('video')
+      nativeVideo.setAttribute('playsinline', '')
+      nativeVideo.setAttribute('autoplay', '')
+      nativeVideo.setAttribute('muted', '')
+      nativeVideo.muted = true
+      nativeVideo.style.width = '100%'
+      nativeVideo.style.height = '100%'
+      nativeVideo.style.minHeight = '410px'
+      nativeVideo.style.objectFit = 'cover'
+      nativeVideo.style.display = 'block'
+      nativeVideo.style.background = '#000'
+
+      reader.appendChild(nativeVideo)
+
+      nativeStream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      })
+
+      nativeVideo.srcObject = nativeStream
+
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('La cámara no ha empezado a mostrar imagen.'))
+        }, 7000)
+
+        const ready = async () => {
+          clearTimeout(timeout)
+
+          try {
+            await nativeVideo.play()
+            resolve()
+          } catch (error) {
+            reject(error)
+          }
+        }
+
+        if (nativeVideo.readyState >= 2) {
+          ready()
+        } else {
+          nativeVideo.onloadedmetadata = ready
+          nativeVideo.onerror = () => {
+            clearTimeout(timeout)
+            reject(new Error('No se ha podido cargar el vídeo de la cámara.'))
+          }
+        }
+      })
+
+      const supportedFormats =
+        typeof BarcodeDetector.getSupportedFormats === 'function'
+          ? await BarcodeDetector.getSupportedFormats()
+          : ['qr_code']
+
+      const formats = supportedFormats.includes('qr_code')
+        ? ['qr_code']
+        : supportedFormats
+
+      nativeDetector = new BarcodeDetector({
+        formats: formats.length ? formats : ['qr_code']
+      })
+
+      nativeLastDetectionAt = 0
+      nativeScanLoop()
+    }
+
+
+    async function nativeScanLoop() {
+      if (
+        !scannerStarted &&
+        scannerEngine !== 'native' &&
+        !nativeVideo
+      ) {
+        return
+      }
+
+      if (
+        nativeVideo &&
+        nativeDetector &&
+        nativeVideo.readyState >= 2 &&
+        !isProcessing
+      ) {
+        const now = performance.now()
+
+        if (now - nativeLastDetectionAt >= 140) {
+          nativeLastDetectionAt = now
+
+          try {
+            const barcodes = await nativeDetector.detect(nativeVideo)
+
+            if (barcodes && barcodes.length > 0) {
+              const qr = barcodes.find(item =>
+                !item.format || item.format === 'qr_code'
+              ) || barcodes[0]
+
+              if (qr && qr.rawValue) {
+                onScanSuccess(qr.rawValue)
+              }
+            }
+          } catch (error) {
+            console.debug('Lectura nativa sin resultado:', error)
+          }
+        }
+      }
+
+      nativeScanFrame = requestAnimationFrame(nativeScanLoop)
+    }
+
+
+    async function stopNativeScanner() {
+      if (nativeScanFrame) {
+        cancelAnimationFrame(nativeScanFrame)
+        nativeScanFrame = null
+      }
+
+      if (nativeStream) {
+        nativeStream.getTracks().forEach(track => {
+          try {
+            track.stop()
+          } catch (error) {}
+        })
+      }
+
+      if (nativeVideo) {
+        try {
+          nativeVideo.pause()
+          nativeVideo.srcObject = null
+        } catch (error) {}
+      }
+
+      nativeVideo = null
+      nativeStream = null
+      nativeDetector = null
+    }
+
+
+    async function startHtml5Scanner() {
       if (!html5QrCode) {
         html5QrCode = new Html5Qrcode('reader', {
           formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
@@ -1052,24 +1253,18 @@
           disableFlip: true,
           qrbox: (w, h) => {
             const size = Math.floor(Math.min(w, h) * 0.91)
+
             return {
               width: size,
               height: size
             }
-          },
-          videoConstraints: {
-            facingMode: 'environment',
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
           }
         },
         onScanSuccess,
         () => {}
       )
-
-      scannerStarted = true
-      scannerPaused = false
     }
+
 
     async function restartScanner() {
       const button = document.getElementById('restartCameraButton')
@@ -1080,27 +1275,35 @@
       }
 
       try {
-        if (html5QrCode && scannerStarted) {
+        if (scannerEngine === 'native') {
+          await stopNativeScanner()
+        }
+
+        if (
+          scannerEngine === 'html5' &&
+          html5QrCode &&
+          scannerStarted
+        ) {
           try {
             await html5QrCode.stop()
           } catch (error) {
-            console.warn('No se pudo detener limpiamente la cámara:', error)
+            console.warn('No se pudo detener html5-qrcode:', error)
           }
+
+          html5QrCode = null
         }
 
         scannerStarted = false
         scannerPaused = false
-        html5QrCode = null
+        scannerEngine = ''
 
-        const oldReader = document.getElementById('reader')
+        const reader = document.getElementById('reader')
 
-        if (oldReader) {
-          const newReader = document.createElement('div')
-          newReader.id = 'reader'
-          oldReader.replaceWith(newReader)
+        while (reader.firstChild) {
+          reader.removeChild(reader.firstChild)
         }
 
-        await new Promise(resolve => setTimeout(resolve, 300))
+        await new Promise(resolve => setTimeout(resolve, 350))
         await startScanner()
 
       } catch (error) {
@@ -1115,6 +1318,7 @@
         }
       }
     }
+
 
     function onScanSuccess(decodedText) {
       const code = normalizeCode(decodedText)
