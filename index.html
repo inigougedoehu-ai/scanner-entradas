@@ -847,10 +847,17 @@
     }
 
     function changeTab(tab) {
-      showTab(tab).catch(error => {
+      /*
+       * La navegación no espera a que la cámara termine
+       * de pausarse o reanudarse. La sección se abre primero
+       * y cualquier error de cámara se registra sin bloquear
+       * Buscar, Resumen o Ajustes.
+       */
+      try {
+        showTab(tab)
+      } catch (error) {
         console.error('Error al cambiar de pestaña:', error)
-        alert('No se ha podido abrir esta sección.')
-      })
+      }
     }
 
     function initialiseApp() {
@@ -980,7 +987,7 @@
       localStorage.removeItem(KEYS.tokenExpiry)
     }
 
-    async function showTab(tab) {
+    function showTab(tab) {
       const validTabs = ['scanner', 'search', 'dashboard', 'settings']
       if (!validTabs.includes(tab)) return
 
@@ -996,16 +1003,35 @@
         if (navButton) navButton.classList.toggle('active', name === tab)
       })
 
-      window.scrollTo({ top: 0, behavior: 'instant' })
+      /*
+       * Forma compatible con Safari y Chrome Android.
+       */
+      window.scrollTo(0, 0)
 
-      if (tab === 'scanner') {
-        await setScannerRunning(true)
-      } else {
-        await setScannerRunning(false)
+      /*
+       * La cámara se gestiona en segundo plano. Un fallo de
+       * pausa/reanudación nunca bloquea la navegación.
+       */
+      setScannerRunning(tab === 'scanner')
+        .catch(error => {
+          console.warn('Incidencia al cambiar el estado de la cámara:', error)
+        })
+
+      if (tab === 'search') {
+        try {
+          renderSearchResults()
+        } catch (error) {
+          console.error('Error al abrir Buscar:', error)
+        }
       }
 
-      if (tab === 'search') renderSearchResults()
-      if (tab === 'dashboard') loadDashboard()
+      if (tab === 'dashboard') {
+        try {
+          loadDashboard()
+        } catch (error) {
+          console.error('Error al abrir Resumen:', error)
+        }
+      }
     }
 
     function capitalize(value) {
