@@ -653,7 +653,7 @@
           </div>
 
           <div class="grid2 mt">
-            <button type="button" class="btn secondary small" onclick="restartScanner()">Reiniciar cámara</button>
+            <button type="button" id="restartCameraButton" class="btn secondary small" onclick="restartScanner()">Reiniciar cámara</button>
             <button type="button" class="btn secondary small" onclick="syncNow(true)">Forzar sincronización</button>
           </div>
         </div>
@@ -972,6 +972,10 @@
       renderMode()
       renderStats()
       showTab('scanner')
+
+      startScanner().catch(error => {
+        console.error('No se pudo iniciar la cámara:', error)
+      })
     }
 
     function logout() {
@@ -999,38 +1003,29 @@
         const section = document.getElementById(name + 'Tab')
         const navButton = document.getElementById('nav' + capitalize(name))
 
-        if (section) section.classList.toggle('hidden', name !== tab)
-        if (navButton) navButton.classList.toggle('active', name === tab)
+        if (section) {
+          section.classList.toggle('hidden', name !== tab)
+        }
+
+        if (navButton) {
+          navButton.classList.toggle('active', name === tab)
+        }
       })
 
-      /*
-       * Forma compatible con Safari y Chrome Android.
-       */
       window.scrollTo(0, 0)
 
       /*
-       * La cámara se gestiona en segundo plano. Un fallo de
-       * pausa/reanudación nunca bloquea la navegación.
+       * La cámara permanece iniciada mientras la sesión está abierta.
+       * Al cambiar de sección solo ocultamos su contenedor.
+       * Esto evita los errores de transición de html5-qrcode
+       * observados en Samsung y Safari.
        */
-      setScannerRunning(tab === 'scanner')
-        .catch(error => {
-          console.warn('Incidencia al cambiar el estado de la cámara:', error)
-        })
-
       if (tab === 'search') {
-        try {
-          renderSearchResults()
-        } catch (error) {
-          console.error('Error al abrir Buscar:', error)
-        }
+        renderSearchResults()
       }
 
       if (tab === 'dashboard') {
-        try {
-          loadDashboard()
-        } catch (error) {
-          console.error('Error al abrir Resumen:', error)
-        }
+        loadDashboard()
       }
     }
 
@@ -1038,38 +1033,8 @@
       return value.charAt(0).toUpperCase() + value.slice(1)
     }
 
-    function setScannerRunning(shouldRun) {
-      scannerDesiredRunning = shouldRun
-
-      scannerTransition = scannerTransition
-        .catch(() => {})
-        .then(async () => {
-          if (shouldRun !== scannerDesiredRunning) return
-
-          if (shouldRun) {
-            await startScannerInternal()
-          } else {
-            await stopScannerInternal()
-          }
-        })
-
-      return scannerTransition
-    }
-
-    async function ensureScannerRunning() {
-      await setScannerRunning(true)
-    }
-
-    async function startScannerInternal() {
-      if (html5QrCode && scannerStarted) {
-        if (scannerPaused) {
-          try {
-            html5QrCode.resume()
-            scannerPaused = false
-          } catch (error) {
-            console.warn('No se pudo reanudar la cámara:', error)
-          }
-        }
+    async function startScanner() {
+      if (scannerStarted && html5QrCode) {
         return
       }
 
@@ -1086,8 +1051,11 @@
           fps: 18,
           disableFlip: true,
           qrbox: (w, h) => {
-            const size = Math.floor(Math.min(w, h) * .91)
-            return { width: size, height: size }
+            const size = Math.floor(Math.min(w, h) * 0.91)
+            return {
+              width: size,
+              height: size
+            }
           },
           videoConstraints: {
             facingMode: 'environment',
@@ -1103,80 +1071,49 @@
       scannerPaused = false
     }
 
-    async function stopScannerInternal() {
-      /*
-       * No destruimos el lector al cambiar de pestaña.
-       * Solo lo pausamos. Así evitamos el error interno
-       * de html5-qrcode con removeChild() en algunos Android.
-       */
-      if (!html5QrCode || !scannerStarted || scannerPaused) {
-        return
-      }
-
-      try {
-        html5QrCode.pause(true)
-        scannerPaused = true
-      } catch (error) {
-        console.warn('No se pudo pausar la cámara:', error)
-      }
-    }
-
-    async function startScanner() {
-      try {
-        await setScannerRunning(true)
-      } catch (error) {
-        alert('No se ha podido abrir la cámara: ' + (error.message || error))
-      }
-    }
-
-    async function stopScanner() {
-      try {
-        await setScannerRunning(false)
-      } catch (error) {
-        console.warn('No se pudo pausar la cámara:', error)
-      }
-    }
-
     async function restartScanner() {
-      /*
-       * Reinicio completo solo cuando el usuario lo pide.
-       * Primero intentamos detener el lector y, aunque la
-       * librería lance un error interno, reconstruimos el
-       * contenedor de forma segura.
-       */
-      scannerDesiredRunning = false
+      const button = document.getElementById('restartCameraButton')
+
+      if (button) {
+        button.disabled = true
+        button.textContent = 'Reiniciando...'
+      }
 
       try {
         if (html5QrCode && scannerStarted) {
-          if (scannerPaused) {
-            try {
-              html5QrCode.resume()
-              scannerPaused = false
-            } catch (error) {}
-          }
-
           try {
             await html5QrCode.stop()
           } catch (error) {
-            console.warn('Error interno al detener la cámara:', error)
+            console.warn('No se pudo detener limpiamente la cámara:', error)
           }
         }
-      } finally {
+
         scannerStarted = false
         scannerPaused = false
         html5QrCode = null
 
-        const reader = document.getElementById('reader')
-        if (reader) {
-          while (reader.firstChild) {
-            reader.removeChild(reader.firstChild)
-          }
+        const oldReader = document.getElementById('reader')
+
+        if (oldReader) {
+          const newReader = document.createElement('div')
+          newReader.id = 'reader'
+          oldReader.replaceWith(newReader)
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 300))
+        await startScanner()
+
+      } catch (error) {
+        alert(
+          'No se ha podido reiniciar la cámara: ' +
+          (error.message || error)
+        )
+      } finally {
+        if (button) {
+          button.disabled = false
+          button.textContent = 'Reiniciar cámara'
         }
       }
-
-      await new Promise(resolve => setTimeout(resolve, 250))
-      scannerDesiredRunning = true
-      await startScannerInternal()
     }
 
     function onScanSuccess(decodedText) {
@@ -1283,7 +1220,7 @@
       return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 9)
     }
 
-    async function nextScan() {
+    function nextScan() {
       currentResultCode = ''
       isProcessing = false
 
@@ -1291,7 +1228,7 @@
       document.getElementById('mainApp').classList.remove('hidden')
       document.getElementById('bottomNav').classList.remove('hidden')
 
-      await showTab('scanner')
+      showTab('scanner')
     }
 
     function showResult(res) {
