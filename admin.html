@@ -83,7 +83,9 @@
           <div class="card"><div class="card-title"><h2>Estado del sistema</h2><span id="systemBadge" class="badge">Comprobando</span></div><div id="systemSummary" class="alert info">Ejecutando comprobaciones…</div><div class="btn-row mt"><button class="btn secondary small" onclick="runPreflight()">Comprobar ahora</button><button class="btn secondary small" onclick="createBackup()">Crear copia</button></div></div>
         </div>
         <div class="grid grid2 mt">
-          <div class="card"><div class="card-title"><h2>Preparación de entradas</h2><span id="pdfBadge" class="badge">—</span></div><div class="progress"><div id="pdfBar"></div></div><div class="progress-label"><span id="pdfGenerated">Generados: —</span><span id="pdfPending">Pendientes: —</span></div><div class="btn-row mt"><button class="btn green small" onclick="generateCodes()">Generar códigos</button><button class="btn small" onclick="generatePdfBatch()">Generar lote de PDFs</button></div></div>
+          <div class="card"><div class="card-title"><h2>Preparación de entradas</h2><span id="pdfBadge" class="badge">—</span></div><div class="progress"><div id="pdfBar"></div></div><div class="progress-label"><span id="pdfGenerated">Generados: —</span><span id="pdfPending">Pendientes: —</span></div><div class="btn-row mt"><button class="btn green small" onclick="generateCodes()">Generar códigos</button><button class="btn small" onclick="generatePdfBatch()">Generar lote de PDFs</button>
+<button class="btn secondary" type="button" onclick="refreshPdfGenerationStatus()">Ver estado</button>
+<button class="btn danger" type="button" onclick="stopPdfGeneration()">Detener generación</button></div></div>
           <div class="card"><div class="card-title"><h2>Últimas incidencias</h2><span id="incidentBadge" class="badge">—</span></div><div id="overviewIncidents" class="muted small">Sin datos</div></div>
         </div>
       </section>
@@ -319,10 +321,30 @@ function setImportProgress(done,total){const pct=Math.round(done/total*100);widt
 
 async function generateCodes(){if(!confirm('Se generarán códigos para todas las filas que todavía no tengan uno. ¿Continuar?'))return;busy('Generando códigos…');try{const r=await jsonp('admingeneratecodes',{token,adminPin},180000);if(r.status!=='OK')throw new Error(r.message);toast(`${r.generated} códigos generados.`,'ok');await refreshAll(false)}catch(e){toast(e.message,'bad')}finally{unbusy()}}
 async function generatePdfBatch(){
+  const selected=prompt(
+    '¿Cuántos PDF quieres generar?\n\n' +
+    'Escribe 100, 300, 600, 1000 o TODO.',
+    '100'
+  );
+
+  if(selected===null)return;
+
+  const normalized=String(selected).trim().toLowerCase();
+  const allowed=['100','300','600','1000','todo','all'];
+
+  if(!allowed.includes(normalized)){
+    toast('Escribe 100, 300, 600, 1000 o TODO.','bad');
+    return;
+  }
+
+  const target=(normalized==='todo'||normalized==='all')
+    ? 'all'
+    : normalized;
+
   if(
     !confirm(
-      'Se iniciará la generación automática de todos los PDFs pendientes. ' +
-      'El primer lote puede tardar varios minutos y los siguientes continuarán solos. ¿Continuar?'
+      `Se iniciará la generación automática de ${target==='all'?'todos los PDF pendientes':target+' PDF'}. ` +
+      'El proceso continuará solo en varios lotes. ¿Continuar?'
     )
   )return;
 
@@ -331,13 +353,14 @@ async function generatePdfBatch(){
   try{
     const r=await jsonp(
       'admingeneratepdfs',
-      {token,adminPin},
+      {token,adminPin,target},
       360000
     );
 
     if(r.status!=='OK')throw new Error(r.message);
 
-    const generated=n(r.automatic?.state?.generated||r.batch?.generated);
+    const automatic=r.automatic?.state||r.automatic||{};
+    const generated=n(automatic.generated);
     const pending=n(r.pdfs?.pending);
 
     toast(
@@ -352,6 +375,62 @@ async function generatePdfBatch(){
     toast(e.message,'bad');
   }finally{
     unbusy();
+  }
+}
+
+
+async function stopPdfGeneration(){
+  if(!confirm('¿Detener la generación automática de PDF?'))return;
+
+  busy('Deteniendo generación…');
+
+  try{
+    const r=await jsonp(
+      'adminstoppdfs',
+      {token,adminPin},
+      120000
+    );
+
+    if(r.status!=='OK')throw new Error(r.message);
+
+    toast('Generación automática detenida.','ok');
+    await refreshAll(false);
+
+  }catch(e){
+    toast(e.message,'bad');
+  }finally{
+    unbusy();
+  }
+}
+
+
+async function refreshPdfGenerationStatus(){
+  try{
+    const r=await jsonp(
+      'adminpdfstatus',
+      {token,adminPin},
+      120000
+    );
+
+    if(r.status!=='OK')throw new Error(r.message);
+
+    const a=r.automatic||{};
+    const target=n(a.target);
+    const generated=n(a.generated);
+    const pending=n(a.pending);
+
+    toast(
+      `PDF: ${a.active?'procesando':'detenido'} · ` +
+      `generados ${generated}` +
+      `${target>0?' de '+target:''} · ` +
+      `pendientes ${pending}`,
+      a.lastError?'bad':'ok'
+    );
+
+    await refreshAll(false);
+
+  }catch(e){
+    toast(e.message,'bad');
   }
 }
 async function runPreflight(){
