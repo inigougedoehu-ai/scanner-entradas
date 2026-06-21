@@ -222,6 +222,57 @@
       color: #fde68a;
     }
 
+
+    .access-zone-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 30px;
+      padding: 6px 11px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .04em;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .access-zone-badge.patio {
+      color: #bfdbfe;
+      background: rgba(37, 99, 235, .16);
+      border-color: rgba(96, 165, 250, .3);
+    }
+
+    .access-zone-badge.palco {
+      color: #fbcfe8;
+      background: rgba(190, 24, 93, .16);
+      border-color: rgba(244, 114, 182, .3);
+    }
+
+    .access-zone-badge.all {
+      color: #fde68a;
+      background: rgba(217, 119, 6, .16);
+      border-color: rgba(251, 191, 36, .3);
+    }
+
+    .zone-setting {
+      display: grid;
+      gap: 9px;
+      width: 100%;
+    }
+
+    .zone-setting select {
+      margin-top: 2px;
+      font-weight: 800;
+    }
+
+    .zone-required {
+      color: #fecaca;
+      font-weight: 800;
+    }
+
     .notice {
       margin-top: 12px;
       padding: 11px 13px;
@@ -620,7 +671,10 @@
               <div class="title">Escanear</div>
               <div id="deviceLabel" class="subtitle"></div>
             </div>
-            <div id="modeBadge" class="mode-badge">MODO REAL</div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:7px">
+              <div id="modeBadge" class="mode-badge">MODO REAL</div>
+              <div id="accessZoneBadge" class="access-zone-badge">ZONA SIN CONFIGURAR</div>
+            </div>
           </div>
 
           <div class="stats mt">
@@ -730,6 +784,22 @@
           </div>
 
           <div class="setting-row">
+            <div class="zone-setting">
+              <div>
+                <div style="font-weight:900">Zona de acceso</div>
+                <div class="small-text">Este móvil solo aceptará entradas de la zona elegida.</div>
+              </div>
+              <select id="accessZoneSelect" onchange="changeAccessZone()">
+                <option value="">Selecciona una zona...</option>
+                <option value="PATIO">Patio</option>
+                <option value="PALCO">Palco</option>
+                <option value="TODAS">Todas · solo incidencias</option>
+              </select>
+              <div id="accessZoneHelp" class="small-text zone-required">Debes seleccionar Patio o Palco antes de escanear.</div>
+            </div>
+          </div>
+
+          <div class="setting-row">
             <div>
               <div style="font-weight:900">Dispositivo</div>
               <div id="settingsDeviceName" class="small-text"></div>
@@ -759,7 +829,7 @@
     <section id="resultView" class="hidden">
       <div id="resultBox" class="result ok"></div>
       <div class="grid2 mt">
-        <button type="button" class="btn secondary" onclick="showUndoModal(currentResultCode)">Deshacer</button>
+        <button type="button" id="resultUndoButton" class="btn secondary" onclick="showUndoModal(currentResultCode)">Deshacer</button>
         <button type="button" class="btn" onclick="nextScan()">Siguiente</button>
       </div>
     </section>
@@ -797,7 +867,8 @@
       lastServerTime: 'scanner_last_server_time_v2',
       dataVersion: 'scanner_data_version_v2',
       simulation: 'scanner_simulation_v2',
-      lastAcceptedCode: 'scanner_last_accepted_v2'
+      lastAcceptedCode: 'scanner_last_accepted_v2',
+      accessZone: 'scanner_access_zone_v1'
     }
 
     const SYNC_INTERVAL_MS = 8000
@@ -811,6 +882,7 @@
     let lastServerTime = Number(localStorage.getItem(KEYS.lastServerTime) || 0)
     let simulationMode = localStorage.getItem(KEYS.simulation) === 'true'
     let lastAcceptedCode = localStorage.getItem(KEYS.lastAcceptedCode) || ''
+    let accessZone = normalizeAccessZone(localStorage.getItem(KEYS.accessZone) || '')
 
     let tickets = {}
     let queue = []
@@ -872,7 +944,9 @@
       loadLocalState()
       document.getElementById('deviceNameInput').value = deviceName
       document.getElementById('simulationToggle').checked = simulationMode
+      document.getElementById('accessZoneSelect').value = accessZone
       renderMode()
+      renderAccessZone()
 
       if (token && tokenExpiry > Date.now()) {
         initialiseWithSession()
@@ -893,6 +967,7 @@
       localStorage.setItem(KEYS.lastServerTime, String(lastServerTime || 0))
       localStorage.setItem(KEYS.dataVersion, dataVersion || '')
       localStorage.setItem(KEYS.lastAcceptedCode, lastAcceptedCode || '')
+      localStorage.setItem(KEYS.accessZone, accessZone || '')
     }
 
     function login() {
@@ -977,9 +1052,17 @@
       document.getElementById('deviceLabel').textContent = deviceName
       document.getElementById('settingsDeviceName').textContent = deviceName
       document.getElementById('simulationToggle').checked = simulationMode
+      document.getElementById('accessZoneSelect').value = accessZone
       renderMode()
+      renderAccessZone()
       renderStats()
-      showTab('scanner')
+      showTab(accessZone ? 'scanner' : 'settings')
+
+      if (!accessZone) {
+        setTimeout(() => {
+          alert('Antes de empezar, selecciona en Ajustes si este móvil está en Patio o en Palco.')
+        }, 150)
+      }
 
       startScanner().catch(error => {
         console.error('No se pudo iniciar la cámara:', error)
@@ -1034,6 +1117,82 @@
 
       if (tab === 'dashboard') {
         loadDashboard()
+      }
+    }
+
+    function normalizeAccessZone(value) {
+      const zone = String(value || '').trim().toUpperCase()
+
+      if (zone === 'SALON' || zone === 'SALÓN' || zone === 'PATIO') {
+        return 'PATIO'
+      }
+
+      if (zone === 'PALCO') {
+        return 'PALCO'
+      }
+
+      if (zone === 'TODAS' || zone === 'TODOS' || zone === 'ALL') {
+        return 'TODAS'
+      }
+
+      return ''
+    }
+
+    function getTicketAccessZone(ticket) {
+      const raw = String(
+        ticket && (ticket.zonaId || ticket.zona) || ''
+      ).toUpperCase()
+
+      return raw.includes('PALCO') ? 'PALCO' : 'PATIO'
+    }
+
+    function accessZoneLabel(zone) {
+      if (zone === 'PATIO') return 'PATIO'
+      if (zone === 'PALCO') return 'PALCO'
+      if (zone === 'TODAS') return 'TODAS'
+      return 'ZONA SIN CONFIGURAR'
+    }
+
+    function renderAccessZone() {
+      const badge = document.getElementById('accessZoneBadge')
+      const help = document.getElementById('accessZoneHelp')
+      const select = document.getElementById('accessZoneSelect')
+
+      if (select && select.value !== accessZone) {
+        select.value = accessZone
+      }
+
+      if (badge) {
+        badge.textContent = accessZoneLabel(accessZone)
+        badge.className = 'access-zone-badge' + (
+          accessZone === 'PATIO' ? ' patio' :
+          accessZone === 'PALCO' ? ' palco' :
+          accessZone === 'TODAS' ? ' all' : ''
+        )
+      }
+
+      if (help) {
+        if (!accessZone) {
+          help.textContent = 'Debes seleccionar Patio o Palco antes de escanear.'
+          help.className = 'small-text zone-required'
+        } else if (accessZone === 'TODAS') {
+          help.textContent = 'Este móvil aceptará entradas de ambas zonas. Úsalo solo para incidencias.'
+          help.className = 'small-text'
+        } else {
+          help.textContent = 'Configurado para ' + accessZoneLabel(accessZone) + '. Las entradas de la otra zona serán rechazadas.'
+          help.className = 'small-text'
+        }
+      }
+    }
+
+    function changeAccessZone() {
+      const select = document.getElementById('accessZoneSelect')
+      accessZone = normalizeAccessZone(select ? select.value : '')
+      localStorage.setItem(KEYS.accessZone, accessZone || '')
+      renderAccessZone()
+
+      if (accessZone) {
+        showTab('scanner')
       }
     }
 
@@ -1349,6 +1508,34 @@
         return
       }
 
+      if (!accessZone) {
+        showResult({
+          ...ticket,
+          status: 'ZONE_NOT_CONFIGURED',
+          message: 'Selecciona Patio o Palco en Ajustes antes de escanear.'
+        })
+        return
+      }
+
+      const ticketAccessZone = getTicketAccessZone(ticket)
+
+      if (
+        accessZone !== 'TODAS' &&
+        ticketAccessZone !== accessZone
+      ) {
+        showResult({
+          ...ticket,
+          status: 'WRONG_ZONE',
+          message:
+            'Esta entrada corresponde a ' +
+            ticketAccessZone +
+            '. Diríjase al acceso de ' +
+            (ticketAccessZone === 'PATIO' ? 'Patio' : 'Palco') +
+            '.'
+        })
+        return
+      }
+
       if (simulationMode) {
         const requestId = makeRequestId()
         queue.push({
@@ -1356,6 +1543,7 @@
           requestId,
           mode: 'SIMULATION',
           source,
+          accessZone,
           createdAt: Date.now(),
           attempts: 0,
           sending: false
@@ -1402,6 +1590,7 @@
         requestId,
         mode: 'REAL',
         source,
+        accessZone,
         createdAt: Date.now(),
         attempts: 0,
         sending: false
@@ -1462,6 +1651,18 @@
         title = 'Entrada ya utilizada'
         playWarning()
         vibrate([120, 70, 120])
+      } else if (res.status === 'WRONG_ZONE') {
+        css = 'invalid'
+        icon = '↪️'
+        title = 'Zona incorrecta'
+        playError()
+        vibrate([180, 80, 180])
+      } else if (res.status === 'ZONE_NOT_CONFIGURED') {
+        css = 'invalid'
+        icon = '⚙️'
+        title = 'Configura la zona'
+        playWarning()
+        vibrate([120, 70, 120])
       } else {
         css = 'invalid'
         icon = '❌'
@@ -1477,6 +1678,14 @@
         : res.status === 'OK' || res.status === 'CONFIRMED'
           ? '<div id="resultConfirmation" class="confirm-badge confirmed">☁️ Guardado en Google Sheets</div>'
           : ''
+
+      const undoButton = document.getElementById('resultUndoButton')
+      if (undoButton) {
+        undoButton.classList.toggle(
+          'hidden',
+          !['OK', 'CONFIRMED', 'DUPLICATE'].includes(res.status)
+        )
+      }
 
       document.getElementById('resultBox').className = 'result ' + css
       document.getElementById('resultBox').innerHTML = `
@@ -1570,7 +1779,8 @@
         code: item.code,
         requestId: item.requestId,
         mode: item.mode,
-        source: item.source
+        source: item.source,
+        accessZone: item.accessZone || accessZone
       }, res => {
         item.sending = false
         handleServerConfirmation(item, res)
@@ -1633,6 +1843,23 @@
 
         if (currentResultCode === item.code) {
           showResult({ ...ticket, status: 'DUPLICATE', message: 'Conflicto: otro dispositivo ya había registrado esta entrada.' })
+        }
+      } else if (res && ['WRONG_ZONE', 'ZONE_NOT_CONFIGURED'].includes(res.status)) {
+        ticket.used = false
+        ticket.pending = false
+        ticket.checkinAt = ''
+        ticket.checkinEpoch = 0
+        ticket.checkinBy = ''
+        ticket.localRequestId = ''
+        queue = queue.filter(q => q.requestId !== item.requestId)
+
+        if (currentResultCode === item.code) {
+          showResult({
+            ...ticket,
+            ...res,
+            status: res.status,
+            message: res.message
+          })
         }
       } else if (res && res.status === 'INVALID') {
         ticket.used = false
