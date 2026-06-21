@@ -318,7 +318,42 @@ async function importExcel(){
 function setImportProgress(done,total){const pct=Math.round(done/total*100);width('importProgress',pct);document.getElementById('importProgressText').innerHTML=`<span>${done} de ${total} filas</span><span>${pct}%</span>`}
 
 async function generateCodes(){if(!confirm('Se generarán códigos para todas las filas que todavía no tengan uno. ¿Continuar?'))return;busy('Generando códigos…');try{const r=await jsonp('admingeneratecodes',{token,adminPin},180000);if(r.status!=='OK')throw new Error(r.message);toast(`${r.generated} códigos generados.`,'ok');await refreshAll(false)}catch(e){toast(e.message,'bad')}finally{unbusy()}}
-async function generatePdfBatch(){if(!confirm('Se generará el siguiente lote de PDFs. Esta operación puede tardar varios minutos.'))return;busy('Generando lote de PDFs…');try{const r=await jsonp('admingeneratepdfs',{token,adminPin},360000);if(r.status!=='OK')throw new Error(r.message);toast(`Lote terminado. Quedan ${n(r.pdfs?.pending)} PDFs pendientes.`,'ok');await refreshAll(false)}catch(e){toast(e.message,'bad')}finally{unbusy()}}
+async function generatePdfBatch(){
+  if(
+    !confirm(
+      'Se iniciará la generación automática de todos los PDFs pendientes. ' +
+      'El primer lote puede tardar varios minutos y los siguientes continuarán solos. ¿Continuar?'
+    )
+  )return;
+
+  busy('Iniciando generación automática…');
+
+  try{
+    const r=await jsonp(
+      'admingeneratepdfs',
+      {token,adminPin},
+      360000
+    );
+
+    if(r.status!=='OK')throw new Error(r.message);
+
+    const generated=n(r.automatic?.state?.generated||r.batch?.generated);
+    const pending=n(r.pdfs?.pending);
+
+    toast(
+      `Generación automática iniciada. ` +
+      `Procesadas: ${generated}. Pendientes: ${pending}.`,
+      'ok'
+    );
+
+    await refreshAll(false);
+
+  }catch(e){
+    toast(e.message,'bad');
+  }finally{
+    unbusy();
+  }
+}
 async function runPreflight(){
   busy('Comprobando sistema…')
   try{
