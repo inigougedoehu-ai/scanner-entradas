@@ -167,7 +167,154 @@ function normalizeTicketType(value){const x=norm(value);return ['invitado','invi
 function renderImportReview(){const total=importedRows.length,salon=importedRows.filter(r=>r.zona==='SALON').length,palco=importedRows.filter(r=>r.zona==='PALCO').length,invitados=importedRows.filter(r=>r.tipoEntrada==='INVITADO').length,noZone=importedRows.filter(r=>!['SALON','PALCO'].includes(r.zona)).length;const seats={},dups=[];importedRows.forEach((r,i)=>{const k=`${r.zona}|${r.fila}|${r.butaca}`;if(r.zona&&r.fila&&r.butaca){if(seats[k])dups.push(`${k} (filas ${seats[k]} y ${i+2})`);else seats[k]=i+2}});const missing=importedRows.filter(r=>!r.nombre||!r.fila||!r.butaca||!r.zona).length;document.getElementById('importStats').innerHTML=metricMini('Filas',total)+metricMini('Salón',salon)+metricMini('Palco',palco)+metricMini('Invitados',invitados);const issues=[];if(noZone)issues.push(`${noZone} filas tienen una zona no reconocida.`);if(missing)issues.push(`${missing} filas tienen datos obligatorios incompletos.`);if(dups.length)issues.push(`${dups.length} asientos están repetidos.`);document.getElementById('importWarnings').innerHTML=issues.length?`<div class="alert warn"><strong>Revisa antes de importar:</strong><br>${issues.map(esc).join('<br>')}</div>`:`<div class="alert ok">El archivo supera las comprobaciones básicas.</div>`;setBadge('importBadge',issues.length?issues.length+' avisos':'Listo',issues.length?'warn':'ok');document.getElementById('importPreview').innerHTML=importedRows.slice(0,100).map(r=>`<tr><td>${esc(r.nombre)}</td><td>${esc(r.tipoEntrada==='INVITADO'?'Invitado':'General')}</td><td>${esc(r.fila)}</td><td>${esc(r.butaca)}</td><td class="zone ${r.zona==='PALCO'?'palco':'salon'}">${esc(r.zona)}</td><td>${esc(r.codigo||'Se generará')}</td><td>${esc(r.email)}</td></tr>`).join('')}
 
 
-async function importExcel(){if(!importedRows.length)return;const mode=document.getElementById('importMode').value;if(mode==='replace'&&!confirm(`Se sustituirá el contenido actual de tickets por ${importedRows.length} filas. ¿Continuar?`))return;const btn=document.getElementById('importBtn');btn.disabled=true;show('importProgressWrap');markStep(3);const compact=importedRows.map(r=>[r.codigo,r.nombre,r.email,r.fila,r.butaca,r.zona,r.tipoEntrada,r.notas,r.usado,r.qrUrl,r.pdfUrl]);const chunkSize=25;let done=0;try{for(let i=0;i<compact.length;i+=chunkSize){const chunk=compact.slice(i,i+chunkSize);const r=await jsonp('adminimportchunk',{token,adminPin,reset:(i===0&&mode==='replace')?'1':'0',rows:JSON.stringify(chunk)},90000);if(r.status!=='OK')throw new Error(r.message||'Error al importar.');done+=chunk.length;setImportProgress(done,compact.length)}const final=await jsonp('adminfinalizeimport',{token,adminPin},120000);if(final.status!=='OK')throw new Error(final.message||'No se ha podido finalizar la importación.');state={...state,...final.snapshot};renderAll();markStep(4);toast(`${final.imported} entradas importadas correctamente.`,'ok')}catch(e){toast(e.message,'bad')}finally{btn.disabled=false}}
+async function importExcel(){
+  if(!importedRows.length){
+    toast('Primero debes seleccionar un Excel.','bad')
+    return
+  }
+
+  const pin=await ensurePin()
+  if(!pin){
+    toast('Necesitas introducir el PIN de administración.','bad')
+    return
+  }
+
+  const mode=document.getElementById('importMode').value
+
+  if(
+    mode==='replace' &&
+    !confirm(
+      `Se sustituirá el contenido actual de tickets por ` +
+      `${importedRows.length} filas. ¿Continuar?`
+    )
+  ){
+    return
+  }
+
+  const btn=document.getElementById('importBtn')
+  btn.disabled=true
+  btn.textContent='Importando…'
+
+  show('importProgressWrap')
+  markStep(3)
+  setImportProgress(0,importedRows.length)
+  setSync('Preparando importación…')
+
+  const compact=importedRows.map(r=>[
+    r.codigo,
+    r.nombre,
+    r.email,
+    r.fila,
+    r.butaca,
+    r.zona,
+    r.tipoEntrada,
+    r.notas,
+    r.usado,
+    r.qrUrl,
+    r.pdfUrl
+  ])
+
+  /*
+   * JSONP utiliza una petición GET. Con bloques grandes la URL supera
+   * el límite de Chrome/Apps Script y la petición ni siquiera llega al
+   * servidor. Tres filas por bloque mantiene cada URL pequeña y estable.
+   */
+  const chunkSize=3
+  let done=0
+
+  try{
+    for(let i=0;i<compact.length;i+=chunkSize){
+      const chunk=compact.slice(i,i+chunkSize)
+
+      setSync(
+        `Importando ${done+1}–${Math.min(done+chunk.length,compact.length)} ` +
+        `de ${compact.length}…`
+      )
+
+      const r=await jsonp(
+        'adminimportchunk',
+        {
+          token,
+          adminPin:pin,
+          reset:(i===0&&mode==='replace')?'1':'0',
+          rows:JSON.stringify(chunk)
+        },
+        90000
+      )
+
+      if(!r || r.status!=='OK'){
+        throw new Error(
+          (r&&r.message) ||
+          `El servidor no ha aceptado el bloque que empieza en la fila ${i+2}.`
+        )
+      }
+
+      if(Number(r.written)!==chunk.length){
+        throw new Error(
+          `El servidor confirmó ${r.written||0} filas, ` +
+          `pero se enviaron ${chunk.length}.`
+        )
+      }
+
+      done+=chunk.length
+      setImportProgress(done,compact.length)
+
+      // Pequeña pausa para no saturar Apps Script.
+      await new Promise(resolve=>setTimeout(resolve,120))
+    }
+
+    setSync('Finalizando importación…')
+
+    const final=await jsonp(
+      'adminfinalizeimport',
+      {
+        token,
+        adminPin:pin,
+        expected:compact.length
+      },
+      120000
+    )
+
+    if(!final || final.status!=='OK'){
+      throw new Error(
+        (final&&final.message) ||
+        'No se ha podido finalizar la importación.'
+      )
+    }
+
+    if(Number(final.imported)!==compact.length){
+      throw new Error(
+        `La importación no coincide: se esperaban ${compact.length} filas ` +
+        `y el servidor contabiliza ${final.imported}.`
+      )
+    }
+
+    markStep(4)
+    setSync(`Importación terminada: ${final.imported} filas`)
+    toast(`${final.imported} entradas importadas correctamente.`,'ok')
+
+    await refreshAll(false)
+    openTab('tickets')
+
+  }catch(e){
+    console.error('Error de importación:',e)
+    setSync(`Error tras importar ${done} de ${compact.length}`)
+    toast(
+      `La importación se detuvo en ${done} de ${compact.length}: ` +
+      `${e.message||e}`,
+      'bad'
+    )
+    alert(
+      `La importación se detuvo en ${done} de ${compact.length} filas.\n\n` +
+      `${e.message||e}\n\n` +
+      `No vuelvas a pulsar importar en modo “Añadir”. ` +
+      `Usa “Reemplazar” para repetirla desde cero.`
+    )
+  }finally{
+    btn.disabled=false
+    btn.textContent='Importar al sistema'
+  }
+}
 function setImportProgress(done,total){const pct=Math.round(done/total*100);width('importProgress',pct);document.getElementById('importProgressText').innerHTML=`<span>${done} de ${total} filas</span><span>${pct}%</span>`}
 
 async function generateCodes(){if(!confirm('Se generarán códigos para todas las filas que todavía no tengan uno. ¿Continuar?'))return;busy('Generando códigos…');try{const r=await jsonp('admingeneratecodes',{token,adminPin},180000);if(r.status!=='OK')throw new Error(r.message);toast(`${r.generated} códigos generados.`,'ok');await refreshAll(false)}catch(e){toast(e.message,'bad')}finally{unbusy()}}
